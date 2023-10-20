@@ -1,0 +1,4 @@
+out
+db.sqlite
+node_modules
+.vscode
