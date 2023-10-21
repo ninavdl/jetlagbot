@@ -3,6 +3,7 @@ import { Challenge } from "../models/Challenge";
 import { Team } from "../models/Team";
 import { CheckGamePreconditions } from "./checkGamePreconditions";
 import { Equal } from "typeorm";
+import { Game } from "../models/Game";
 
 export class StartGame extends GameLifecycleAction<void, void> {
     public async run() {
@@ -39,8 +40,10 @@ export class StartGame extends GameLifecycleAction<void, void> {
             });
         })
 
+        this.game.running = true;
         await challengeRepository.save(allChallenges);
         await teamsRepository.save(teams);
+        await this.entityManager.getRepository(Game).save(this.game);
 
         await Promise.all(teams.map((team) =>
             this.notifier.notifyTeam(team, "Your team was assigned the folllowing challenges:\n\n"

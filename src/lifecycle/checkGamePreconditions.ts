@@ -7,6 +7,10 @@ export class CheckGamePreconditions extends GameLifecycleAction<void, void> {
     public async run() {
         const playerRepo = this.entityManager.getRepository(Player);
 
+        if(this.game.running) {
+            throw new GameError("The game is already running");
+        }
+
         let uninitiatedPlayers: Player[] = await playerRepo.findBy({
             game: Equal(this.game.uuid),
             telegramChatId: IsNull()
