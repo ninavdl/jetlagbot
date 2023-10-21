@@ -15,7 +15,7 @@ export class StartGame extends GameLifecycleAction<void, void> {
 
         let [allChallenges, teams] = await Promise.all([
             challengeRepository.findBy({ game: Equal(this.game.uuid) }),
-            teamsRepository.findBy({ game: Equal(this.game.uuid) })
+            teamsRepository.find({ where: { game: Equal(this.game.uuid) }, relations: ["players"] })
         ]);
 
         let allChallengesByUuid = Object.fromEntries(allChallenges.map(challenge => [challenge.uuid, challenge]));
@@ -41,5 +41,11 @@ export class StartGame extends GameLifecycleAction<void, void> {
 
         await challengeRepository.save(allChallenges);
         await teamsRepository.save(teams);
+
+        await Promise.all(teams.map((team) =>
+            this.notifier.notifyTeam(team, "Your team was assigned the folllowing challenges:\n\n"
+                + team.challengesOnHand.map(challenge => challenge.toMarkdown()).join("\n\n")
+            )
+        ));
     }
 }

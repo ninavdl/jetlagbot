@@ -5,12 +5,13 @@ import { Region } from "../models/Region";
 import { Subregion } from "../models/Subregion";
 
 
-export type CreateGameArgs = {name: string};
+export type CreateGameArgs = {name: string, telegramMainChatId: number};
 
 export class CreateGame extends GameLifecycleAction<Game, CreateGameArgs> {
     public async run(): Promise<Game> {
         let game = new Game();
         game.name = this.args.name;
+        game.mainTelegramChatId = this.args.telegramMainChatId;
         game.allChallenges = [];
 
         // Create some demo data
@@ -22,7 +23,7 @@ export class CreateGame extends GameLifecycleAction<Game, CreateGameArgs> {
             challenge.name = "Test Challenge " + i;
             challenge.description = "bla bla bla " + i;
             challenge.stars = Math.floor(Math.random() * 3);
-            challenge.awardsSubregions = Math.floor(Math.random() * 2);
+            challenge.awardsSubregions = Math.floor(Math.random() * 2) + 1;
             challenge.game = game;
             game.allChallenges.push(challenge);
             challenges.push(challenge);

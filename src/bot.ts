@@ -8,6 +8,7 @@ import { JoinTeamScene } from './bot/joinTeam';
 import { StartGameScene } from './bot/startGame';
 import { CommandScene } from './bot/command';
 import { HelloScene } from './bot/hello';
+import { Notifier } from './notifier';
 
 type SceneConstructor = {new(telegraf: Telegraf<JetlagContext>): CommandScene}
 
@@ -33,7 +34,7 @@ export class Bot {
         const stage = new Scenes.Stage<JetlagContext>(scenes);
 
         this.telegraf.use((ctx, next) => {
-            ctx.gameLifecycle = new GameLifecycle(this.dataSource);
+            ctx.gameLifecycle = new GameLifecycle(this.dataSource, this.telegraf);
             return next();
         });
         this.telegraf.use(session());

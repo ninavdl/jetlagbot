@@ -21,11 +21,16 @@ export class Game extends GameObject {
     running: boolean = false;
 
     @Column()
-    numberOfChallengesPerTeam: number = 6;
+    numberOfChallengesPerTeam: number = 5;
 
     @OneToMany(() => Challenge, (challenge) => challenge.game)
     allChallenges: Relation<Challenge>[];
 
     @OneToMany(() => Region, (region) => region.game)
     allRegions: Relation<Region>[];
+
+    @Column({
+        nullable: true
+    })
+    mainTelegramChatId: number;
 }

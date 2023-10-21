@@ -13,13 +13,19 @@ export class CreateGameScene extends CommandScene {
     }
 
     setup() {
-        this.enter(ctx => {
+        this.enter(async (ctx) => {
+            if (ctx.chat.type != "group" && ctx.chat.type != "supergroup") {
+                await ctx.reply("This command has to be executed in a group");
+                await ctx.scene.leave();
+                return;
+            }
+
             ctx.reply('Game name?', Markup.forceReply());
         });
 
         this.on(message('text'), async (ctx) => {
             try {
-                await ctx.gameLifecycle.runAction(CreateGame, { name: ctx.update.message.text });
+                await ctx.gameLifecycle.runAction(CreateGame, { name: ctx.update.message.text, telegramMainChatId: ctx.chat.id });
                 return ctx.reply("Game created. You can add teams now.");
             }
             catch (e) {

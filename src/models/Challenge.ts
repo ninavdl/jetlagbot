@@ -2,6 +2,7 @@ import { Entity, Column, ManyToOne, ManyToMany, Relation } from "typeorm";
 import { Game } from "./Game";
 import { GameObject } from "./GameObject";
 import { Team } from "./Team";
+import { escapeMarkdown } from "../util";
 
 
 @Entity()
@@ -26,4 +27,8 @@ export class Challenge extends GameObject {
 
     @Column()
     completed: boolean = false;
+
+    public toMarkdown(): string {
+        return `**${escapeMarkdown(this.name)}** \\(${this.stars} ⭐, ${this.awardsSubregions} 🗺️\\):  \n_${escapeMarkdown(this.description)}_`
+    }
 }
