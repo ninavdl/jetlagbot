@@ -1,7 +1,17 @@
 import { Telegraf, Markup, Scenes, session } from 'telegraf';
 import { JetlagContext } from './context';
-import { GameLifecycle, GameError } from './gameLifecycle';
 import { message } from 'telegraf/filters';
+import { GameLifecycle } from './lifecycle/lifecycle';
+import { CreateGame } from './lifecycle/createGame';
+import { CreateTeam } from './lifecycle/createTeam';
+import { Team } from './models/Team';
+import { ListTeams } from './lifecycle/listTeams';
+import { JoinTeam } from './lifecycle/joinTeam';
+import { Player } from './models/Player';
+import { CheckGamePreconditions } from './lifecycle/checkGamePreconditions';
+import { StartGame } from './lifecycle/startGame';
+import { DataSource } from 'typeorm';
+import { InitPlayer } from './lifecycle/initPlayer';
 
 function getPlayerName(telegramUser: any): string {
     if (telegramUser.username == null) {
@@ -22,15 +32,15 @@ class CreateGameScene extends Scenes.BaseScene<JetlagContext> {
 
         this.on(message('text'), async (ctx) => {
             try {
-                console.log(ctx);
-                await ctx.gameLifecycle.createGame(ctx.update.message.text);
-                ctx.scene.leave();
+                await ctx.gameLifecycle.runAction(CreateGame, { name: ctx.update.message.text });
                 return ctx.reply("Game created. You can add teams now.");
             }
             catch (e) {
                 console.log(e);
                 await ctx.reply("Error: " + e.message);
-                ctx.scene.leave();
+            }
+            finally {
+                await ctx.scene.leave();
             }
         });
     }
@@ -48,13 +58,14 @@ class CreateTeamScene extends Scenes.BaseScene<JetlagContext> {
 
         this.on(message("text"), async (ctx) => {
             try {
-                const team = await ctx.gameLifecycle.createTeam(ctx.update.message.text);
-                ctx.scene.leave();
+                const team: Team = await ctx.gameLifecycle.runAction(CreateTeam, { name: ctx.update.message.text });
                 return ctx.reply("Team '" + team.name + "' created.");
             }
             catch (e) {
                 console.log(e);
                 await ctx.reply("Error: " + e.message);
+            }
+            finally {
                 ctx.scene.leave();
             }
         })
@@ -68,25 +79,29 @@ class JoinTeamScene extends Scenes.BaseScene<JetlagContext> {
         super(JoinTeamScene.id);
 
         this.enter(async (ctx) => {
-            const teams = await ctx.gameLifecycle.listTeams();
+            const teams: Team[] = await ctx.gameLifecycle.runAction(ListTeams, null);
 
             teams.forEach(team => {
-                this.action(team.uuid, async (ctx) => {
-                    const player = await ctx.gameLifecycle.getPlayerFromTelegramId(getPlayerName(ctx.callbackQuery.from), ctx.callbackQuery.from.id)
-                    await ctx.gameLifecycle.assignPlayerToTeam(
-                        player.uuid,
-                        team.uuid
-                    );
-
-                    await ctx.reply("Assigned player '" + player.name + "' to team '" + team.name + "'");
-                    await ctx.scene.leave();
-                })
+                this.action(team.uuid, ctx => this.assign(team, ctx));
             })
 
             return ctx.reply("Select team", Markup.inlineKeyboard(teams.map(team =>
                 Markup.button.callback(team.name, team.uuid)
             )));
+        });
+
+    }
+
+    async assign(team: Team, ctx: JetlagContext): Promise<void> {
+        let player: Player = await ctx.gameLifecycle.runAction(JoinTeam, {
+            name: getPlayerName(ctx.callbackQuery.from),
+            telegramUserId: ctx.callbackQuery.from.id,
+            teamUuid: team.uuid
         })
+
+        await ctx.reply("Assigned player '" + player.name + "' to team '" + team.name + "'");
+        await ctx.editMessageReplyMarkup(null);
+        await ctx.scene.leave();
     }
 }
 
@@ -97,38 +112,35 @@ class StartGameScene extends Scenes.BaseScene<JetlagContext> {
         super(StartGameScene.id);
 
         this.enter(async (ctx) => {
-            const playersNotInitiated = await ctx.gameLifecycle.getPlayersNotInitiated();
+            try {
+                await ctx.gameLifecycle.runAction(CheckGamePreconditions, null);
 
-            if(playersNotInitiated.length != 0) {
-                await ctx.reply("The following players are not initiated yet:\n" + 
-                    playersNotInitiated.map(player => player.name).join(", ") + ".\n" +
-                    "They must send the /hello command to this bot in a private chat."
-                );
+                await ctx.reply("Do you really want to start the game? It is not possible to modify teams, players, challenges afterwards.",
+                    Markup.inlineKeyboard([
+                        Markup.button.callback("Yes", "confirm"),
+                        Markup.button.callback("No", "decline")
+                    ]));
+            } catch (e) {
+                await ctx.reply("Error: " + e.message);
                 await ctx.scene.leave();
-                return;
             }
-
-            const allChallenges = await ctx.gameLifecycle.getAllChallenges();
-            if( allChallenges.length == 0 ) {
-                await ctx.reply("There are no challenges defined.");
-                await ctx.scene.leave();
-                return;
-            }
-
-            await ctx.reply("Do you really want to start the game? It is not possible to modify teams, players, challenges afterwards.",
-                Markup.inlineKeyboard([
-                    Markup.button.callback("Yes", "confirm"),
-                    Markup.button.callback("No", "decline")
-                ]));
         })
 
         this.action("confirm", async (ctx) => {
-            await ctx.reply("Starting game. Challenges will be assigned");
-
-            ctx.gameLifecycle.randomReassignAllChallenges();
+            try {
+                await ctx.editMessageReplyMarkup(null);
+                await ctx.reply("Starting game. Challenges will be assigned");
+                await ctx.gameLifecycle.runAction(StartGame, null);
+            }
+            catch (e) {
+                await ctx.reply("Error: " + e.message);
+                await ctx.scene.leave();
+            }
         });
 
         this.action("decline", async (ctx) => {
+            await ctx.editMessageReplyMarkup(null);
+            await ctx.reply("Ok :(")
             await ctx.scene.leave();
         });
     }
@@ -137,10 +149,11 @@ class StartGameScene extends Scenes.BaseScene<JetlagContext> {
 export class Bot {
     telegraf: Telegraf<JetlagContext>;
     gameLifecycle: GameLifecycle;
+    dataSource: DataSource;
 
-    constructor(token: string) {
+    constructor(token: string, dataSource: DataSource) {
         this.telegraf = new Telegraf<JetlagContext>(token);
-        this.gameLifecycle = new GameLifecycle();
+        this.dataSource = dataSource;
 
         const stage = new Scenes.Stage<JetlagContext>([
             new CreateGameScene(),
@@ -150,7 +163,7 @@ export class Bot {
         ]);
 
         this.telegraf.use((ctx, next) => {
-            ctx.gameLifecycle = this.gameLifecycle;
+            ctx.gameLifecycle = new GameLifecycle(this.dataSource);
             return next();
         });
         this.telegraf.use(session());
@@ -167,10 +180,12 @@ export class Bot {
                 return;
             }
             try {
-                await ctx.gameLifecycle.initPlayerChatId(
-                    getPlayerName(ctx.update.message.from),
-                    ctx.update.message.from.id,
-                    ctx.update.message.chat.id);
+                await ctx.gameLifecycle.runAction(InitPlayer,
+                    {
+                        name: getPlayerName(ctx.update.message.from),
+                        telegramUserId: ctx.update.message.from.id,
+                        telegramChatId: ctx.update.message.chat.id
+                    });
             }
             catch (e) {
                 await ctx.reply("Error: " + e.message);
