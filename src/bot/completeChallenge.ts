@@ -22,8 +22,10 @@ export class CompleteChallengeScene extends CommandScene {
     public async setup() {
         this.enter(async (ctx) => {
             try {
-                const prefix = uuid();
-                const teamChallenges: Challenge[] = await ctx.gameLifecycle.runAction(ListTeamChallenges, { user: ctx.user });
+                await this.assertPrivateChat(ctx);
+
+                const teamChallenges: Challenge[] = 
+                await ctx.gameLifecycle.runAction(ListTeamChallenges, { user: ctx.user });
 
                 teamChallenges.forEach(challenge => {
                 })

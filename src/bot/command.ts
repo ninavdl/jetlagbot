@@ -1,5 +1,6 @@
 import { JetlagContext } from "../context";
 import { Scenes, Telegraf } from "telegraf";
+import { GameError } from "../lifecycle/lifecycle";
 
 export abstract class CommandScene extends Scenes.BaseScene<JetlagContext> {
     sceneId: string;
@@ -27,4 +28,15 @@ export abstract class CommandScene extends Scenes.BaseScene<JetlagContext> {
         return telegramUser.username;
     }
 
+    protected assertPrivateChat(ctx: JetlagContext) {
+        if(ctx.chat.type != "private") {
+            throw new GameError("This command has to be executed in a private chat");
+        }
+    }
+
+    protected assertGroupChat(ctx: JetlagContext) {
+        if(ctx.chat.type != "group" && ctx.chat.type != "supergroup") {
+            throw new GameError("This command has to be executed in a group");
+        }
+    }
 }

@@ -12,11 +12,9 @@ export class HelloScene extends CommandScene {
 
     public setup() {
         this.enter(async (ctx) => {
-            if (ctx.chat.type != "private") {
-                await ctx.reply("This command has to be executed in a private chat");
-                return;
-            }
             try {
+                this.assertPrivateChat(ctx);
+                
                 await ctx.gameLifecycle.runAction(InitPlayer,
                     {
                         user: ctx.user,

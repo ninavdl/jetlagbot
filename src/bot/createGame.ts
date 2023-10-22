@@ -14,8 +14,11 @@ export class CreateGameScene extends CommandScene {
 
     setup() {
         this.enter(async (ctx) => {
-            if (ctx.chat.type != "group" && ctx.chat.type != "supergroup") {
-                await ctx.reply("This command has to be executed in a group");
+            try {
+                this.assertGroupChat(ctx)
+            }
+            catch(e) {
+                await ctx.reply("Error: " + e.message);
                 await ctx.scene.leave();
                 return;
             }

@@ -8,8 +8,9 @@ import { JoinTeamScene } from './bot/joinTeam';
 import { StartGameScene } from './bot/startGame';
 import { CommandScene } from './bot/command';
 import { HelloScene } from './bot/hello';
-import { Notifier } from './notifier';
 import { CompleteChallengeScene } from './bot/completeChallenge';
+import { GetChallengesScene } from './bot/getChallenges';
+import { GetTeamStatusScene } from './bot/teamStatus';
 
 type SceneConstructor = {new(telegraf: Telegraf<JetlagContext>): CommandScene}
 
@@ -28,7 +29,9 @@ export class Bot {
             JoinTeamScene,
             StartGameScene,
             HelloScene,
-            CompleteChallengeScene
+            CompleteChallengeScene,
+            GetChallengesScene,
+            GetTeamStatusScene
         ]
 
         const scenes = sceneTypes.map(sceneType => new sceneType(this.telegraf));

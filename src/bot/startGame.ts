@@ -16,6 +16,8 @@ export class StartGameScene extends CommandScene {
     setup() {
         this.enter(async (ctx) => {
             try {
+                this.assertGroupChat(ctx);
+                
                 await ctx.gameLifecycle.runAction(CheckGamePreconditions, null);
 
                 await ctx.reply("Do you really want to start the game? It is not possible to modify teams, players, challenges afterwards.",
