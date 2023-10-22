@@ -4,6 +4,7 @@ import { Team } from "../models/Team";
 import { CheckGamePreconditions } from "./checkGamePreconditions";
 import { Equal } from "typeorm";
 import { Game } from "../models/Game";
+import { chooseRandom } from "../util";
 
 export class StartGame extends GameLifecycleAction<void, void> {
     public async run() {
@@ -25,19 +26,24 @@ export class StartGame extends GameLifecycleAction<void, void> {
             challenge.teams = [];
         });
 
+        let notifyPromises = []
+
         teams.forEach(team => {
             let challengeUuids: string[] = [];
             while (challengeUuids.length < this.game.numberOfChallengesPerTeam) {
-                let random = Math.floor(Math.random() * allChallenges.length)
-                let challenge = allChallenges[random];
+                let challenge = chooseRandom(allChallenges);
                 if (!(challengeUuids.includes(challenge.uuid))) {
                     challengeUuids.push(challenge.uuid);
                 }
             }
-            team.challengesOnHand = challengeUuids.map(uuid => allChallengesByUuid[uuid]);
-            team.challengesOnHand.forEach(challenge => {
+            let challengesOnHand = challengeUuids.map(uuid => allChallengesByUuid[uuid]);
+            team.challengesOnHand = Promise.resolve(challengesOnHand);
+            challengesOnHand.forEach(challenge => {
                 challenge.teams.push(team);
             });
+            notifyPromises.push(this.notifier.notifyTeam(team, "Your team was assigned the folllowing challenges:\n\n"
+                + challengesOnHand.map(challenge => challenge.toMarkdown()).join("\n\n")
+            ))
         })
 
         this.game.running = true;
@@ -45,10 +51,6 @@ export class StartGame extends GameLifecycleAction<void, void> {
         await teamsRepository.save(teams);
         await this.entityManager.getRepository(Game).save(this.game);
 
-        await Promise.all(teams.map((team) =>
-            this.notifier.notifyTeam(team, "Your team was assigned the folllowing challenges:\n\n"
-                + team.challengesOnHand.map(challenge => challenge.toMarkdown()).join("\n\n")
-            )
-        ));
+        await Promise.all(notifyPromises);
     }
 }

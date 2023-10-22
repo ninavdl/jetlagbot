@@ -1,12 +1,13 @@
 import { GameLifecycleAction } from "./lifecycle";
 import { SupplyPlayer } from "./supplyPlayer";
 import { Player } from "../models/Player";
+import { User } from "../user";
 
-export type InitPlayerArgs = {name: string, telegramUserId: number, telegramChatId: number}
+export type InitPlayerArgs = {user: User, telegramChatId: number}
 
 export class InitPlayer extends GameLifecycleAction<Player, InitPlayerArgs> {
     public async run() {
-        const player: Player = await this.callSubAction(SupplyPlayer, {name: this.args.name, telegramUserId: this.args.telegramUserId})
+        const player: Player = await this.callSubAction(SupplyPlayer, {user: this.args.user})
             
         player.telegramChatId = this.args.telegramChatId;
 

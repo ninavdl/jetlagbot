@@ -31,8 +31,7 @@ export class JoinTeamScene extends CommandScene {
 
     async assign(team: Team, ctx: JetlagContext): Promise<void> {
         let player: Player = await ctx.gameLifecycle.runAction(JoinTeam, {
-            name: this.getPlayerName(ctx.callbackQuery.from),
-            telegramUserId: ctx.callbackQuery.from.id,
+            user: ctx.user,
             teamUuid: team.uuid
         });
 

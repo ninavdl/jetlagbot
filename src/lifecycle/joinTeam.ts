@@ -3,12 +3,13 @@ import { SupplyPlayer } from "./supplyPlayer";
 import { Team } from "../models/Team";
 import { Player } from "../models/Player";
 import { GameError } from "./lifecycle";
+import { User } from "../user";
 
-export type JoinTeamArgs = {name: string, telegramUserId: number, teamUuid: string}
+export type JoinTeamArgs = {user: User, teamUuid: string}
 
 export class JoinTeam extends GameLifecycleAction<Player, JoinTeamArgs> {
     public async run(): Promise<Player> {
-        let player: Player = await this.callSubAction(SupplyPlayer, {name: this.args.name, telegramUserId: this.args.telegramUserId});
+        let player: Player = await this.callSubAction(SupplyPlayer, {user: this.args.user});
         if(player == null) {
             throw new GameError("No such player");
         }

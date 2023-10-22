@@ -19,8 +19,7 @@ export class HelloScene extends CommandScene {
             try {
                 await ctx.gameLifecycle.runAction(InitPlayer,
                     {
-                        name: this.getPlayerName(ctx.message.from),
-                        telegramUserId: ctx.message.from.id,
+                        user: ctx.user,
                         telegramChatId: ctx.message.chat.id
                     });
                 await ctx.reply("Successfully initiated bot");

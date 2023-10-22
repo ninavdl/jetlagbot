@@ -1,4 +1,4 @@
-import { Entity, Column, OneToMany, ManyToOne, ManyToMany, Relation, JoinTable } from "typeorm";
+import { Entity, Column, OneToMany, ManyToOne, ManyToMany, Relation, JoinTable, EntityManager } from "typeorm";
 import { Game } from "./Game";
 import { Subregion } from "./Subregion";
 import { Player } from "./Player";
@@ -19,7 +19,7 @@ export class Team extends GameObject {
 
     @ManyToMany(() => Challenge, (challenge) => challenge.teams)
     @JoinTable()
-    challengesOnHand: Challenge[];
+    challengesOnHand: Promise<Challenge[]>;
 
     @Column()
     stars: number = 0;

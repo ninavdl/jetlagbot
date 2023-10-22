@@ -9,6 +9,7 @@ import { StartGameScene } from './bot/startGame';
 import { CommandScene } from './bot/command';
 import { HelloScene } from './bot/hello';
 import { Notifier } from './notifier';
+import { CompleteChallengeScene } from './bot/completeChallenge';
 
 type SceneConstructor = {new(telegraf: Telegraf<JetlagContext>): CommandScene}
 
@@ -26,7 +27,8 @@ export class Bot {
             CreateTeamScene,
             JoinTeamScene,
             StartGameScene,
-            HelloScene
+            HelloScene,
+            CompleteChallengeScene
         ]
 
         const scenes = sceneTypes.map(sceneType => new sceneType(this.telegraf));
@@ -34,11 +36,21 @@ export class Bot {
         const stage = new Scenes.Stage<JetlagContext>(scenes);
 
         this.telegraf.use((ctx, next) => {
+            console.log(ctx);
+            next();
+        })
+        this.telegraf.use((ctx, next) => {
             ctx.gameLifecycle = new GameLifecycle(this.dataSource, this.telegraf);
+            ctx.user = {
+                displayName: ctx.from.username == null ? ctx.from.first_name : ctx.from.username,
+                telegramUserId: ctx.from.id
+            }
             return next();
         });
         this.telegraf.use(session());
         this.telegraf.use(stage.middleware());
+
+
 
         scenes.forEach(scene => scene.init());
 

@@ -27,7 +27,7 @@ export class Notifier {
     }
 
     async notifyTeamById(teamUuid: string, message: string) {
-        let team = this.entityManager.getRepository(Team).find({
+        let team = await this.entityManager.getRepository(Team).findOne({
             where: {
                 uuid: teamUuid
             },
@@ -37,6 +37,8 @@ export class Notifier {
         if(team == null) {
             throw new GameError("No such team");
         }
+
+        await this.notifyPlayers(team.players, message);
     }
 
     async notifyTeam(team: Team, message: string) {
