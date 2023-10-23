@@ -7,9 +7,9 @@ import { GameError } from "./lifecycle/lifecycle";
 
 export class Notifier {
     constructor(
-        private telegraf: Telegraf,
         private game: Game,
-        private entityManager: EntityManager
+        private entityManager: EntityManager,
+        private telegraf?: Telegraf,
     ) {}
 
     async notifyPlayersById(playerUuids: string[], message: string) {
@@ -21,8 +21,9 @@ export class Notifier {
     }
 
     async notifyPlayers(players: Player[], message: string) {
+        if(this.telegraf == null) return;
         players.forEach(async (player) => {
-            await this.telegraf.telegram.sendMessage(player.telegramChatId, message, {parse_mode: "MarkdownV2"});
+            await this.telegraf.telegram.sendMessage(player.telegramChatId, message, {parse_mode: "MarkdownV2"})
         });
     }
 

@@ -11,6 +11,8 @@ import { HelloScene } from './bot/hello';
 import { CompleteChallengeScene } from './bot/completeChallenge';
 import { GetChallengesScene } from './bot/getChallenges';
 import { GetTeamStatusScene } from './bot/teamStatus';
+import { StartAttackScene } from './bot/startAttack';
+import { FinishAttackScene } from './bot/finishAttack';
 
 type SceneConstructor = {new(telegraf: Telegraf<JetlagContext>): CommandScene}
 
@@ -31,12 +33,18 @@ export class Bot {
             HelloScene,
             CompleteChallengeScene,
             GetChallengesScene,
-            GetTeamStatusScene
+            GetTeamStatusScene,
+            StartAttackScene,
+            FinishAttackScene
         ]
 
         const scenes = sceneTypes.map(sceneType => new sceneType(this.telegraf));
 
         const stage = new Scenes.Stage<JetlagContext>(scenes);
+
+        this.telegraf.catch((err, ctx) => {
+            console.log(err);
+        })
 
         this.telegraf.use((ctx, next) => {
             console.log(ctx);

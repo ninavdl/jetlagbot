@@ -3,6 +3,7 @@ import { Game } from "../models/Game";
 import { Challenge } from "../models/Challenge";
 import { Region } from "../models/Region";
 import { Subregion } from "../models/Subregion";
+import { BattleChallenge } from "../models/BattleChallenge";
 
 
 export type CreateGameArgs = {name: string, telegramMainChatId: number};
@@ -13,6 +14,7 @@ export class CreateGame extends GameLifecycleAction<Game, CreateGameArgs> {
         game.name = this.args.name;
         game.mainTelegramChatId = this.args.telegramMainChatId;
         game.allChallenges = [];
+        game.allBattleChallenges = [];
 
         // Create some demo data
         // Later this should be imported from CSV
@@ -27,6 +29,17 @@ export class CreateGame extends GameLifecycleAction<Game, CreateGameArgs> {
             challenge.game = game;
             game.allChallenges.push(challenge);
             challenges.push(challenge);
+        }
+
+        let battleChallenges = [];
+        for(let i = 0; i < 5; i++) {
+            let battleChallenge = new BattleChallenge();
+            battleChallenge.name = "Battle Challenge " + i;
+            battleChallenge.description = "bla bla bla";
+            battleChallenge.timeInMinutes = 15;
+            battleChallenge.game = game;
+            game.allBattleChallenges.push(battleChallenge);
+            battleChallenges.push(battleChallenge);
         }
 
         let regions = [
@@ -51,6 +64,7 @@ export class CreateGame extends GameLifecycleAction<Game, CreateGameArgs> {
         await Promise.all([
             this.entityManager.getRepository(Game).save(game),
             this.entityManager.getRepository(Challenge).save(challenges),
+            this.entityManager.getRepository(BattleChallenge).save(battleChallenges),
             this.entityManager.getRepository(Region).save(regions),
             this.entityManager.getRepository(Subregion).save(subregions)
         ]);

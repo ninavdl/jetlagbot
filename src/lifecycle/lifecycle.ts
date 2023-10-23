@@ -15,7 +15,7 @@ type ActionConstructor<ArgsType, ActionType> = {
 export class GameLifecycle {
     gameId?: string;
 
-    constructor(protected dataSource: DataSource, protected telegraf: Telegraf<JetlagContext>) {
+    constructor(protected dataSource: DataSource, protected telegraf?: Telegraf<JetlagContext>) {
     }
 
     public async runAction<ActionType extends GameLifecycleAction<ReturnType, ArgsType>, ArgsType, ReturnType>(
@@ -34,7 +34,7 @@ export class GameLifecycle {
 
             const game = games.length == 0 ? null : games[0];
 
-            const notifier = new Notifier(this.telegraf, game, entityManager);
+            const notifier = new Notifier(game, entityManager, this.telegraf);
 
             let action = new actionConstructor(
                 games.length == 0 ? null : games[0],

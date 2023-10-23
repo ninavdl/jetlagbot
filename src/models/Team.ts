@@ -1,9 +1,10 @@
-import { Entity, Column, OneToMany, ManyToOne, ManyToMany, Relation, JoinTable, EntityManager } from "typeorm";
+import { Entity, Column, OneToMany, ManyToOne, ManyToMany, Relation, JoinTable, EntityManager, OneToOne } from "typeorm";
 import { Game } from "./Game";
 import { Subregion } from "./Subregion";
 import { Player } from "./Player";
 import { GameObject } from "./GameObject";
 import { Challenge } from "./Challenge";
+import { Attack } from "./Attack";
 
 
 @Entity()
@@ -26,6 +27,12 @@ export class Team extends GameObject {
 
     @OneToMany(() => Subregion, (subregion) => subregion.team)
     claimedSubregions: Relation<Subregion>[];
+
+    @OneToOne(() => Attack, (attack) => attack.attackingTeam)
+    currentlyAttacking: Relation<Attack>;
+
+    @OneToOne(() => Attack, (attack) => attack.attackedTeam)
+    currentlyAttacked: Relation<Attack>
 
     constructor(name: string) {
         super();

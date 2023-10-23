@@ -9,6 +9,8 @@ import { GameLifecycle } from "../../src/lifecycle/lifecycle";
 import { Telegraf } from "telegraf";
 import { JetlagContext } from "../../src/context";
 import {expect, jest, test} from '@jest/globals';
+import { BattleChallenge } from "../../src/models/BattleChallenge";
+import { Attack } from "../../src/models/Attack";
 
 jest.mock("telegraf", () => {
     return {
@@ -62,7 +64,7 @@ export class LifecycleTestHelper {
         this.instance._datasource = new DataSource({
             type: "sqlite",
             database: ":memory:",
-            entities: [Challenge, Game, Player, Region, Subregion, Team],
+            entities: [Challenge, Game, Player, Region, Subregion, Team, Attack, BattleChallenge],
             synchronize: true
         })
         await this.instance._datasource.initialize()

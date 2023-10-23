@@ -8,11 +8,13 @@ import { Subregion } from "./models/Subregion";
 import { Region } from "./models/Region";
 import { Game } from "./models/Game";
 import { DataSource } from "typeorm";
+import { BattleChallenge } from "./models/BattleChallenge";
+import { Attack } from "./models/Attack";
 
 const datasource = new DataSource({
     type: "sqlite",
     database: "./db.sqlite",
-    entities: [Game, Team, Player, Region, Subregion, Challenge],
+    entities: [Game, Team, Player, Region, Subregion, Challenge, BattleChallenge, Attack],
     logging: true,
     synchronize: true
 });
