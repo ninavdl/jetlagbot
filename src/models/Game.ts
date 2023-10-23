@@ -4,6 +4,7 @@ import { Team } from "./Team";
 import { GameObject } from "./GameObject";
 import { Player } from "./Player";
 import { Region } from "./Region";
+import { BattleChallenge } from "./BattleChallenge";
 
 
 @Entity()
@@ -29,8 +30,20 @@ export class Game extends GameObject {
     @OneToMany(() => Region, (region) => region.game)
     allRegions: Relation<Region>[];
 
+    @OneToMany(() => BattleChallenge, (battleChallenge) => battleChallenge.game)
+    allBattleChallenges: Relation<BattleChallenge>[];
+
     @Column({
         nullable: true
     })
     mainTelegramChatId: number;
+
+    @Column({default: 1})
+    pointsPerSubregion: number = 1;
+
+    @Column({default: 2})
+    pointsPerRegion: number = 2;
+
+    @Column({default: 3})
+    areaBonus: number = 3;
 }

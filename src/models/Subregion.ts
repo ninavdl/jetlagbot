@@ -19,6 +19,6 @@ export class Subregion extends GameObject {
     @OneToOne(() => Attack, (attack) => attack.subregion, {nullable: true})
     currentAttack: Relation<Attack> = null
 
-    @Column()
-    areaInSquareKilometers: number;
+    @Column({default: 0})
+    areaInSquareKilometers: number = 0;
 }
