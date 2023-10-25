@@ -17,7 +17,7 @@ export class JoinTeamScene extends CommandScene {
 
     setup() {
         this.enter(async (ctx) => {
-            const teams: Team[] = await ctx.gameLifecycle.runAction(ListTeams, null);
+            const teams: Team[] = await ctx.gameLifecycle.runAction(ListTeams, {withPlayers: true});
 
             teams.forEach(team => {
                 this.action(team.uuid, ctx => this.assign(team, ctx));

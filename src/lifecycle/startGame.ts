@@ -37,7 +37,7 @@ export class StartGame extends GameLifecycleAction<void, void> {
                 }
             }
             let challengesOnHand = challengeUuids.map(uuid => allChallengesByUuid[uuid]);
-            team.challengesOnHand = Promise.resolve(challengesOnHand);
+            team.challengesOnHand = challengesOnHand;
             challengesOnHand.forEach(challenge => {
                 challenge.teams.push(team);
             });

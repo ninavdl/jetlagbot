@@ -5,6 +5,7 @@ import { GameObject } from "./GameObject";
 import { Player } from "./Player";
 import { Region } from "./Region";
 import { BattleChallenge } from "./BattleChallenge";
+import { Curse } from "./Curse";
 
 
 @Entity()
@@ -33,6 +34,9 @@ export class Game extends GameObject {
     @OneToMany(() => BattleChallenge, (battleChallenge) => battleChallenge.game)
     allBattleChallenges: Relation<BattleChallenge>[];
 
+    @OneToMany(() => Curse, (curse) => curse.game)
+    allCurses: Relation<Curse>[];
+    
     @Column({
         nullable: true
     })

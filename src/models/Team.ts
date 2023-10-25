@@ -5,6 +5,7 @@ import { Player } from "./Player";
 import { GameObject } from "./GameObject";
 import { Challenge } from "./Challenge";
 import { Attack } from "./Attack";
+import { CurseAssignment } from "./CurseAssignment";
 
 
 @Entity()
@@ -20,7 +21,17 @@ export class Team extends GameObject {
 
     @ManyToMany(() => Challenge, (challenge) => challenge.teams)
     @JoinTable()
-    challengesOnHand: Promise<Challenge[]>;
+    challengesOnHand: Relation<Challenge[]>;
+
+    @ManyToMany(() => Challenge, (challenge) => challenge.completedByTeams)
+    @JoinTable()
+    completedChallenges: Promise<Challenge[]>;
+
+    @ManyToOne(() => CurseAssignment, curseAssignment => curseAssignment.ownerTeam)
+    cursesOnHand: Relation<CurseAssignment>[];
+
+    @ManyToOne(() => CurseAssignment, curseAssignment => curseAssignment.cursedTeam)
+    cursed: Relation<CurseAssignment>[];
 
     @Column()
     stars: number = 0;

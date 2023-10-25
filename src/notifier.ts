@@ -5,7 +5,10 @@ import { Player } from "./models/Player";
 import { Team } from "./models/Team";
 import { GameError } from "./lifecycle/lifecycle";
 
+
 export class Notifier {
+    static scheduledMessages: Promise<void>[] = [];
+
     constructor(
         private game: Game,
         private entityManager: EntityManager,

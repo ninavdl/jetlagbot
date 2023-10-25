@@ -3,19 +3,22 @@ import { Game } from "../models/Game";
 import { Notifier } from "../notifier";
 import { Telegraf } from "telegraf";
 import { JetlagContext } from "../context";
+import { Scheduler } from "../schedule";
 
 export class GameError extends Error {
 
 }
 
 type ActionConstructor<ArgsType, ActionType> = {
-    new(game: Game, gameId: string, entityManger: EntityManager, args: ArgsType, notifier: Notifier): ActionType;
+    new(game: Game, gameId: string, entityManger: EntityManager, args: ArgsType, notifier: Notifier, scheduler: Scheduler): ActionType;
 }
 
 export class GameLifecycle {
     gameId?: string;
+    scheduler: Scheduler;
 
     constructor(protected dataSource: DataSource, protected telegraf?: Telegraf<JetlagContext>) {
+        this.scheduler = new Scheduler(this);
     }
 
     public async runAction<ActionType extends GameLifecycleAction<ReturnType, ArgsType>, ArgsType, ReturnType>(
@@ -41,7 +44,8 @@ export class GameLifecycle {
                 this.gameId,
                 entityManager,
                 args,
-                notifier
+                notifier,
+                this.scheduler
             );
             return action.run();
         })
@@ -54,7 +58,8 @@ export abstract class GameLifecycleAction<ReturnType, ArgType> {
         protected gameId: string,
         protected entityManager: EntityManager,
         protected args: ArgType,
-        protected notifier: Notifier) {
+        protected notifier: Notifier,
+        protected scheduler: Scheduler) {
     }
 
     public abstract run(): Promise<ReturnType>;
@@ -72,7 +77,8 @@ export abstract class GameLifecycleAction<ReturnType, ArgType> {
             this.gameId,
             this.entityManager,
             args,
-            this.notifier);
+            this.notifier,
+            this.scheduler);
         return subAction.run();
     }
 }

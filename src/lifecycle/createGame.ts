@@ -4,6 +4,7 @@ import { Challenge } from "../models/Challenge";
 import { Region } from "../models/Region";
 import { Subregion } from "../models/Subregion";
 import { BattleChallenge } from "../models/BattleChallenge";
+import { Curse } from "../models/Curse";
 
 
 export type CreateGameArgs = {name: string, telegramMainChatId: number};
@@ -61,12 +62,22 @@ export class CreateGame extends GameLifecycleAction<Game, CreateGameArgs> {
             subregions.push(subregion);
         }
 
-        await Promise.all([
-            this.entityManager.getRepository(Game).save(game),
-            this.entityManager.getRepository(Challenge).save(challenges),
-            this.entityManager.getRepository(BattleChallenge).save(battleChallenges),
-            this.entityManager.getRepository(Region).save(regions),
-            this.entityManager.getRepository(Subregion).save(subregions)
+        let curses = [];
+        for(let i = 0; i < 10; i++) {
+            let curse = new Curse();
+            curse.name = "Curse " + i;
+            curse.game = game;
+            curse.description = "bla bla bla";
+            curses.push(curse);
+        }
+
+        await this.entityManager.save([
+            game,
+            ...challenges,
+            ...battleChallenges,
+            ...curses,
+            ...regions,
+            ...subregions,
         ]);
 
         return game;

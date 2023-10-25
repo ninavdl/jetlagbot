@@ -66,50 +66,35 @@ export class CompleteChallenge extends GameLifecycleAction<void, CompleteChallen
             subregion.team = team;
         })
 
+        const currentCompleteChallenge = await team.completedChallenges;
+        if (!currentCompleteChallenge.map(c => c.uuid).includes(challenge.uuid))
+            team.completedChallenges = Promise.resolve([...currentCompleteChallenge, challenge]);
+
         await Promise.all([
             teamRepository.save(team),
             challengeRepository.save(challenge),
             subregionRepository.save(subregions)
         ]);
 
-        let notifications: Promise<void>[] = [];
-
-        notifications.push(this.notifier.notifyGroup(
-            `Team ${team.name} has claimed new subregions: ${subregions.map(subregion => subregion.name).join(", ")}`
-        ));
-
-        // Unassign this challenge from all teams that have it on hand (including the team that completed it),
-        // and reassign a new random uncompleted challenge to each team.
-
-        let allUncompletedChallenges = await challengeRepository.findBy({
-            game: Equal(this.game.uuid),
-            completed: false,
-            uuid: Not(challenge.uuid)
+        // this could be one query but typeorm sucks
+        let allChallenges = await this.entityManager.getRepository(Challenge).findBy({
+            game: Equal(this.game.uuid)
         });
 
-        let updateQueries: Promise<void>[] = [];
+        let completedChallenges = (await this.entityManager.getRepository(Challenge).createQueryBuilder("challenge")
+            .leftJoin("challenge.completedByTeams", "completedByTeam")
+            .where("completedByTeam.uuid = :team_uuid", {team_uuid: player.team.uuid})
+            .getMany()).map(c => c.uuid);
+        
+        let newChallenge = chooseRandom(allChallenges.filter(c => !completedChallenges.includes(c.uuid)));
 
-        for (let challengeTeam of challenge.teams) {
-            let teamChallengeUuids = (await challengeTeam.challengesOnHand).map(challenge => challenge.uuid);
+        await teamRepository.createQueryBuilder("team").relation(Team, "challengesOnHand")
+            .of(team)
+            .addAndRemove({ uuid: newChallenge.uuid }, { uuid: challenge.uuid });
 
-            let uncompletedChallengesNotOnHand = allUncompletedChallenges.filter(challenge => !teamChallengeUuids.includes(challenge.uuid));
-            let newChallenge = chooseRandom(uncompletedChallengesNotOnHand);
 
-            updateQueries.push(teamRepository.createQueryBuilder("team")
-                .relation(Team, "challengesOnHand")
-                .of(challengeTeam)
-                .addAndRemove({ uuid: newChallenge.uuid }, { uuid: challenge.uuid }));
-
-            notifications.push(
-                this.notifier.notifyTeamById(challengeTeam.uuid, escapeMarkdown(`
-                        Another team has completed the challenge "${challenge.name}".\n
-                        You can no longer complete this challenge and it has been removed from your hand.\n
-                        It has been replaced by a new challenge:\n\n`) +
-                    newChallenge.toMarkdown())
-            )
-        }
-
-        await Promise.all(updateQueries);
-        await Promise.all(notifications);
+        await this.notifier.notifyGroup(
+            `Team ${team.name} has claimed new subregions: ${subregions.map(subregion => subregion.name).join(", ")}`
+        );
     }
 }
