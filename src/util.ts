@@ -28,6 +28,7 @@ export function chooseNRandom<T>(values: T[], n: number): T[] {
         let i = random(values.length);
         if(takenIndices.includes(i)) continue;
         result.push(values[i]);
+        takenIndices.push(i);
     }
     return result;
 }

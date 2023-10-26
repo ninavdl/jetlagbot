@@ -45,6 +45,14 @@ export class Team extends GameObject {
     @OneToOne(() => Attack, (attack) => attack.attackedTeam)
     currentlyAttacked: Relation<Attack>
 
+    public static async replaceAllChallengesOnHand(entityManager: EntityManager, teamUuid: string, challengeUuids: string[]) {
+        await entityManager.query("DELETE FROM team_challenges_on_hand_challenge WHERE teamUuid = $1", [teamUuid]);
+        for (let challengeUuid of challengeUuids) {
+            await entityManager.query("INSERT INTO team_challenges_on_hand_challenge (teamUuid, challengeUuid) VALUES ($1, $2);",
+            [teamUuid, challengeUuid]);
+        }
+    }
+
     constructor(name: string) {
         super();
         this.name = name;

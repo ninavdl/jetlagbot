@@ -31,37 +31,28 @@ export class Challenge extends GameObject {
     @Column()
     completed: boolean = false;
 
-    public static async findNotCompletedByTeam(entityManager: EntityManager, teamUuid: string, gameUuid: string): Promise<Challenge[]> {
-        const queryBuilder = entityManager.createQueryBuilder();
-        return entityManager.getRepository(Challenge).createQueryBuilder("challenge")
-            .where("gameUuid = :game_uuid", { game_uuid: gameUuid })
-            .andWhere(`uuid not in ${queryBuilder.subQuery().select("completeChallenge.uuid")
-                .from(Team, "team")
-                .leftJoin("team.completedChallenges", "completeChallenge")
-                .where("team.uuid = :team_uuid", { team_uuid: teamUuid })
-                .getQuery()
-                }`)
-            .getMany();
+    public static async findUuidsNotCompletedByTeam(entityManager: EntityManager, teamUuid: string, gameUuid: string): Promise<string[]> {
+        const result: { uuid: string }[] = await
+            entityManager.query(
+                `SELECT uuid FROM challenge
+            WHERE uuid NOT IN (
+                SELECT challengeUuid FROM team_completed_challenges_challenge WHERE teamUuid = $1
+            )
+            AND gameUuid = $2;`, [teamUuid, gameUuid]);
+        return result.map(obj => obj.uuid);
     }
 
-    public static async findNotCompletedAndNotOnHandOfTeam(entityManager: EntityManager, teamUuid: string, gameUuid: string): Promise<Challenge[]> {
-        const queryBuilder = entityManager.createQueryBuilder();
-        return entityManager.getRepository(Challenge).createQueryBuilder("challenge")
-            .where("gameUuid = :game_uuid", { game_uuid: gameUuid })
-            .andWhere(`uuid not in ${queryBuilder.subQuery().select("completeChallenge.uuid")
-                .from(Team, "team")
-                .leftJoin("team.completedChallenges", "completeChallenge")
-                .where("team.uuid = :team_uuid", { team_uuid: teamUuid })
-                .getQuery()
-                }`)
-            .andWhere(`uuid not in ${queryBuilder.subQuery().select("onHandChallenge.uuid")
-                .from(Team, "team")
-                .leftJoin("team.challengesOnHand", "onHandChallenge")
-                .where("team.uuid = :team_uuid", { team_uuid: teamUuid })
-                .getQuery()
-                }`)
-            .getMany();
-
+    public static async findUuidsNotCompletedAndNotOnHandOfTeam(entityManager: EntityManager, teamUuid: string, gameUuid: string): Promise<string[]> {
+        const result: { uuid: string }[] = await entityManager.query(
+            `SELECT uuid FROM challenge
+            WHERE uuid NOT IN (
+                SELECT challengeUuid FROM team_challenges_on_hand_challenge WHERE teamUuid = $1
+            )
+            AND uuid NOT IN (
+                SELECT challengeUuid FROM team_completed_challenges_challenge WHERE teamUuid = $1
+            )
+            AND gameUuid = $2;`, [teamUuid, gameUuid]);
+        return result.map(obj => obj.uuid);
     }
 
     public toMarkdown(): string {

@@ -299,10 +299,7 @@ export class PowerupScene extends CommandScene {
                 stars: this.powerups["RedrawCards"].stars
             });
 
-            await ctx.reply("You have received the following new challenges:\n\n" +
-                newChallenges.map(challenge => challenge.toMarkdown()).join("\n"),
-                { parse_mode: "MarkdownV2" }
-            );
+            await ctx.reply("Cards redrawn");
         }
         catch (e) {
             console.log(e);

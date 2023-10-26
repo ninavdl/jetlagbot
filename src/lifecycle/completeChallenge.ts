@@ -3,7 +3,7 @@ import { GameError } from "./lifecycle";
 import { Team } from "../models/Team";
 import { Subregion } from "../models/Subregion";
 import { Challenge } from "../models/Challenge";
-import { In, Not, Equal } from "typeorm";
+import { In, Not, Equal, LessThanOrEqual } from "typeorm";
 import { User } from "../user";
 import { SupplyPlayer } from "./supplyPlayer";
 import { Player } from "../models/Player";
@@ -76,25 +76,20 @@ export class CompleteChallenge extends GameLifecycleAction<void, CompleteChallen
             subregionRepository.save(subregions)
         ]);
 
-        // this could be one query but typeorm sucks
-        let allChallenges = await this.entityManager.getRepository(Challenge).findBy({
-            game: Equal(this.game.uuid)
-        });
+        const availableChallengeUuids = await Challenge.findUuidsNotCompletedAndNotOnHandOfTeam(this.entityManager, player.team.uuid, this.game.uuid);
 
-        let completedChallenges = (await this.entityManager.getRepository(Challenge).createQueryBuilder("challenge")
-            .leftJoin("challenge.completedByTeams", "completedByTeam")
-            .where("completedByTeam.uuid = :team_uuid", {team_uuid: player.team.uuid})
-            .getMany()).map(c => c.uuid);
-        
-        let newChallenge = chooseRandom(allChallenges.filter(c => !completedChallenges.includes(c.uuid)));
+        const newChallengeUuid: string = chooseRandom(availableChallengeUuids);
+        const newChallenge = await this.entityManager.getRepository(Challenge).findOneBy({ uuid: newChallengeUuid });
 
         await teamRepository.createQueryBuilder("team").relation(Team, "challengesOnHand")
             .of(team)
-            .addAndRemove({ uuid: newChallenge.uuid }, { uuid: challenge.uuid });
+            .addAndRemove({ uuid: newChallengeUuid }, { uuid: challenge.uuid });
 
 
         await this.notifier.notifyGroup(
             `Team ${team.name} has claimed new subregions: ${subregions.map(subregion => subregion.name).join(", ")}`
         );
+
+        await this.notifier.notifyTeamById(player.team.uuid, `Your new challenge is:\n\n${newChallenge.toMarkdown()}`)
     }
 }
