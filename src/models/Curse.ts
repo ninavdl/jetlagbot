@@ -18,7 +18,11 @@ export class Curse extends GameObject {
     @OneToMany(() => CurseAssignment, curseAssignment => curseAssignment.curse)
     assignments: Relation<CurseAssignment>[]; 
 
+    @Column({nullable: true})
+    timeoutInMinutes: number;
+
     public toMarkdown(): string {
-        return `**${escapeMarkdown(this.name)}**:\n_${escapeMarkdown(this.description)}_`
+        const timeout = this.timeoutInMinutes == null ? "" : ` \\(${this.timeoutInMinutes} minutes\\)`
+        return `*${escapeMarkdown(this.name)}*${timeout}:\n_${escapeMarkdown(this.description)}_`
     }
 }

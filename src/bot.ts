@@ -15,6 +15,8 @@ import { StartAttackScene } from './bot/startAttack';
 import { FinishAttackScene } from './bot/finishAttack';
 import { LeaderboardScene } from './bot/leaderboard';
 import { PowerupScene } from './bot/powerup';
+import { ListCursesScene } from './bot/listCurses';
+import { CurseScene } from './bot/curse';
 
 type SceneConstructor = {new(telegraf: Telegraf<JetlagContext>): CommandScene}
 
@@ -39,7 +41,9 @@ export class Bot {
             StartAttackScene,
             FinishAttackScene,
             LeaderboardScene,
-            PowerupScene
+            PowerupScene,
+            ListCursesScene,
+            CurseScene
         ]
 
         const scenes = sceneTypes.map(sceneType => new sceneType(this.telegraf));

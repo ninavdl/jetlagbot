@@ -68,6 +68,7 @@ export class CreateGame extends GameLifecycleAction<Game, CreateGameArgs> {
             curse.name = "Curse " + i;
             curse.game = game;
             curse.description = "bla bla bla";
+            curse.timeoutInMinutes = 1
             curses.push(curse);
         }
 
