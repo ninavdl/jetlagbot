@@ -1,6 +1,6 @@
 import { GameLifecycleAction } from "./lifecycle";
 import { Team } from "../models/Team";
-import { ILike } from "typeorm";
+import { Equal, ILike } from "typeorm";
 import { GameError } from "./lifecycle";
 
 export type CreateTeamArgs = {name: string};
@@ -8,7 +8,8 @@ export type CreateTeamArgs = {name: string};
 export class CreateTeam extends GameLifecycleAction<Team, CreateTeamArgs>{
     public async run(): Promise<Team> {
         const teamsWithName = await this.entityManager.getRepository(Team).findOneBy({
-            name: ILike(this.args.name)
+            name: ILike(this.args.name),
+            game: Equal(this.game.uuid)
         });
 
         if (teamsWithName != null) {

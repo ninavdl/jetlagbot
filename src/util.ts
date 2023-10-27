@@ -7,7 +7,7 @@ const replaceRegex = new RegExp("([" +
     + "])", 'g');
 
 export function escapeMarkdown(str: string): string {
-    return str.replace(replaceRegex, '\\1');
+    return str.replace(replaceRegex, '\\$1');
 }
 
 /** Returns random number between 0 and maxExclusive */

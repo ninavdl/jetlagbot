@@ -56,6 +56,6 @@ export class Challenge extends GameObject {
     }
 
     public toMarkdown(): string {
-        return `**${escapeMarkdown(this.name)}** \\(${this.stars} ⭐, ${this.awardsSubregions} 🗺️\\):  \n_${escapeMarkdown(this.description)}_`
+        return `*${escapeMarkdown(this.name)}* \\(${this.stars} ⭐, ${this.awardsSubregions} 🗺️\\):  \n_${escapeMarkdown(this.description)}_`
     }
 }
