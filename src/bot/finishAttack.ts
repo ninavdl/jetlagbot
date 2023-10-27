@@ -17,6 +17,8 @@ export class FinishAttackScene extends CommandScene {
     setup() {
         this.enter(async (ctx) => {
             try {
+                this.assertPrivateChat(ctx);
+
                 const attack: Attack = await ctx.gameLifecycle.runAction(GetCurrentAttack, {user: ctx.user});
 
                 const actionAttackingWins = uuid();

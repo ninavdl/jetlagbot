@@ -22,6 +22,8 @@ export class CurseScene extends CommandScene {
     async setup() {
         this.enter(async (ctx) => {
             try {
+                this.assertPrivateChat(ctx);
+
                 const curses: Curse[] = await ctx.gameLifecycle.runAction(ListCursesOnHand, { user: ctx.user });
 
                 if (curses.length == 0) {

@@ -76,6 +76,8 @@ export class PowerupScene extends CommandScene {
     setup() {
         this.enter(async (ctx) => {
             try {
+                this.assertPrivateChat(ctx);
+
                 const player: Player = await ctx.gameLifecycle.runAction(SupplyPlayer, { user: ctx.user, withTeam: true });
 
                 const abortId = uuid();
