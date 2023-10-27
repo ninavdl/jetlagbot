@@ -33,6 +33,7 @@ export class ListAttackableSubregions extends GameLifecycleAction<Subregion[], L
         // - part of this game (i.e. part of a region that is part of this game)
         // - claimed, but not by this team
         // - not already being attacked
+        // - were not attacked before
         return this.entityManager.getRepository(Subregion).createQueryBuilder("subregion")
             .innerJoin("subregion.region", "region")
             .innerJoinAndSelect("subregion.team", "claimedTeam")
@@ -40,6 +41,7 @@ export class ListAttackableSubregions extends GameLifecycleAction<Subregion[], L
             .where("region.gameUuid = :game_uuid", {game_uuid: this.game.uuid})
             .andWhere("claimedTeam.uuid != :team_uuid", {team_uuid: player.team.uuid})
             .andWhere("currentAttack.uuid is null")
+            .andWhere("subregion.attackLocked = 0")
             .getMany()
     }
 }

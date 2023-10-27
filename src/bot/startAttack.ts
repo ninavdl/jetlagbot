@@ -27,12 +27,20 @@ export class StartAttackScene extends CommandScene {
                     return;
                 }
 
+                const cancelId = uuid();
+
+                this.action(cancelId, async (ctx) => {
+                    await ctx.editMessageReplyMarkup(null);
+                    await ctx.scene.leave();
+                })
+
                 await ctx.reply("Which subregion do you want to attack?", Markup.inlineKeyboard(
-                    attackableSubregions.map(subregion => {
+                    [...attackableSubregions.map(subregion => {
                         const id = uuid();
                         this.action(id, async (ctx) => this.prepareBattleChallenge(ctx, subregion.uuid));
-                        return Markup.button.callback(subregion.name + `(${subregion.team.name})`, id);
+                        return Markup.button.callback(subregion.name + ` (${subregion.team.name})`, id);
                     }),
+                    Markup.button.callback("Cancel", cancelId)],
                     { columns: 1 }
                 ))
             }
@@ -54,6 +62,7 @@ export class StartAttackScene extends CommandScene {
         });
 
         this.action(id + "abort", async (ctx) => {
+            await ctx.editMessageReplyMarkup(null);
             await ctx.reply("Aborted attack.");
             await ctx.scene.leave();
         })

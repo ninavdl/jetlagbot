@@ -24,18 +24,23 @@ export class CompleteChallengeScene extends CommandScene {
             try {
                 this.assertPrivateChat(ctx);
 
-                const teamChallenges: Challenge[] = 
-                await ctx.gameLifecycle.runAction(ListTeamChallenges, { user: ctx.user });
+                const teamChallenges: Challenge[] =
+                    await ctx.gameLifecycle.runAction(ListTeamChallenges, { user: ctx.user });
 
-                teamChallenges.forEach(challenge => {
+                const cancelId = uuid();
+
+                this.action(cancelId, async (ctx) => {
+                    await ctx.editMessageReplyMarkup(null);
+                    await ctx.scene.leave();
                 })
 
                 await ctx.reply("Which challenge did you complete?", Markup.inlineKeyboard(
-                    teamChallenges.map(challenge => {
+                    [...teamChallenges.map(challenge => {
                         const id = uuid();
                         this.action(id, (ctx) => this.offerRegions(ctx, challenge.uuid, []))
                         return Markup.button.callback(challenge.name, id)
                     }),
+                    Markup.button.callback("Cancel", cancelId)],
                     { columns: 1 }
                 ));
             }
@@ -54,7 +59,12 @@ export class CompleteChallengeScene extends CommandScene {
         const regions: { [uuid: string]: Region } = {}
         const subregionsByRegion: { [uuid: string]: Subregion[] } = {}
 
-        const prefix = uuid();
+        const cancelId = uuid();
+
+        this.action(cancelId, async (ctx) => {
+            await ctx.editMessageReplyMarkup(null);
+            await ctx.scene.leave();
+        })
 
         unclaimedSubregions.forEach(subregion => {
             if (subregion.region.uuid in subregionsByRegion) subregionsByRegion[subregion.region.uuid].push(subregion);
@@ -64,15 +74,12 @@ export class CompleteChallengeScene extends CommandScene {
         });
 
 
-        Object.values(regions).forEach(region => {
-        })
-
         await ctx.reply("In which region is the subregion you want to claim?", Markup.inlineKeyboard(
-            Object.values(regions).map(region => {
+            [...Object.values(regions).map(region => {
                 const id = uuid();
                 this.action(id, async (ctx) => this.offerSubregions(ctx, subregionsByRegion[region.uuid], challengeUuid, alreadySelectedSubregions));
                 return Markup.button.callback(region.name, id)
-            }),
+            }), Markup.button.callback("Cancel", cancelId)],
             { columns: 1 }
         ));
     }
@@ -80,14 +87,14 @@ export class CompleteChallengeScene extends CommandScene {
     public async offerSubregions(ctx: JetlagContext, subregions: Subregion[], challengeUuid: string, alreadySelectedSubregions: string[]) {
         await ctx.editMessageReplyMarkup(null);
 
-        let challenge: Challenge = await ctx.gameLifecycle.runAction(GetChallenge, {uuid: challengeUuid});
-        if(challenge.completed) {
-            await ctx.reply("Challenge is already completed");
-            await ctx.scene.leave();
-            return;
-        }
+        let challenge: Challenge = await ctx.gameLifecycle.runAction(GetChallenge, { uuid: challengeUuid });
 
-        const prefix = uuid();
+        const cancelId = uuid();
+
+        this.action(cancelId, async (ctx) => {
+            await ctx.editMessageReplyMarkup(null);
+            await ctx.scene.leave();
+        })
 
         let callback = async (ctx, subregionUuid) => {
             if (challenge.awardsSubregions == alreadySelectedSubregions.length + 1) {
@@ -99,12 +106,14 @@ export class CompleteChallengeScene extends CommandScene {
         };
 
         await ctx.reply("Which subregion do you want to claim?", Markup.inlineKeyboard(
-            subregions.filter(subregion => !alreadySelectedSubregions.includes(subregion.uuid)).map(subregion => {
+            [...subregions.filter(subregion => !alreadySelectedSubregions.includes(subregion.uuid)).map(subregion => {
                 const id = uuid();
                 this.action(id, async (ctx) => callback(ctx, subregion.uuid));
                 return Markup.button.callback(subregion.name, id)
             }),
-            { columns: 1 }
+            Markup.button.callback("Cancel", cancelId)
+            ],
+        { columns: 1 }
         ))
     }
 

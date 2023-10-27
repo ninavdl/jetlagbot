@@ -21,6 +21,8 @@ export class Player extends GameObject {
     @Column({ nullable: true })
     telegramChatId: number = null;
 
+    @Column({default: false})
+    isAdmin: boolean = false;
 
     constructor(name: string, telegramId: number) {
         super();

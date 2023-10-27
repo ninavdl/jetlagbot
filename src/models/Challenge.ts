@@ -28,9 +28,6 @@ export class Challenge extends GameObject {
     @Column()
     awardsSubregions: number;
 
-    @Column()
-    completed: boolean = false;
-
     public static async findUuidsNotCompletedByTeam(entityManager: EntityManager, teamUuid: string, gameUuid: string): Promise<string[]> {
         const result: { uuid: string }[] = await
             entityManager.query(

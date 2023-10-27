@@ -7,6 +7,10 @@ export type CreateTeamArgs = {name: string};
 
 export class CreateTeam extends GameLifecycleAction<Team, CreateTeamArgs>{
     public async run(): Promise<Team> {
+        if(this.game.running) {
+            throw new GameError("Game is already running");
+        }
+
         const teamsWithName = await this.entityManager.getRepository(Team).findOneBy({
             name: ILike(this.args.name),
             game: Equal(this.game.uuid)

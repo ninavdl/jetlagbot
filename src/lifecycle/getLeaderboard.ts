@@ -26,7 +26,7 @@ export class GetLeaderboard extends GameLifecycleAction<LeaderboardEntry[], void
             const entry: LeaderboardEntry = {
                 name: team.name,
                 subregions: team.claimedSubregions.length,
-                uniqueRegions: new Set(team.claimedSubregions.flatMap(subregion => subregion.region)).size,
+                uniqueRegions: new Set(team.claimedSubregions.flatMap(subregion => subregion.region.uuid)).size,
                 area: team.claimedSubregions.reduce((area, subregion) => area + subregion.areaInSquareKilometers, 0),
                 points: 0
             };

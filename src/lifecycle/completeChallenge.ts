@@ -47,10 +47,6 @@ export class CompleteChallenge extends GameLifecycleAction<void, CompleteChallen
             throw new GameError("Invalid number of subregions, expected " + challenge.awardsSubregions);
         }
 
-        if (challenge.completed) {
-            throw new GameError("Challenge is already completed");
-        }
-
         subregions.forEach(subregion => {
             if (subregion.team != null) {
                 throw new GameError("Subregion " + subregion.name + " was already claimed");
@@ -59,7 +55,6 @@ export class CompleteChallenge extends GameLifecycleAction<void, CompleteChallen
 
         // Update challenge and award team stars and subregions
 
-        challenge.completed = true;
         team.stars += challenge.stars;
 
         subregions.forEach(subregion => {
@@ -72,7 +67,6 @@ export class CompleteChallenge extends GameLifecycleAction<void, CompleteChallen
 
         await Promise.all([
             teamRepository.save(team),
-            challengeRepository.save(challenge),
             subregionRepository.save(subregions)
         ]);
 
@@ -87,7 +81,7 @@ export class CompleteChallenge extends GameLifecycleAction<void, CompleteChallen
 
 
         await this.notifier.notifyGroup(
-            `Team ${team.name} has claimed new subregions: ${subregions.map(subregion => subregion.name).join(", ")}`
+            `Team ${escapeMarkdown(team.name)} has claimed new subregions: ${subregions.map(subregion => escapeMarkdown(subregion.name)).join(", ")}`
         );
 
         await this.notifier.notifyTeamById(player.team.uuid, `Your new challenge is:\n\n${newChallenge.toMarkdown()}`)

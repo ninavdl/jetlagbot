@@ -18,6 +18,7 @@ import { PowerupScene } from './bot/powerup';
 import { ListCursesScene } from './bot/listCurses';
 import { CurseScene } from './bot/curse';
 import { ImportScene } from './bot/import';
+import { ClaimedSubregionsScene } from './bot/claimedSubregions';
 
 type SceneConstructor = {new(telegraf: Telegraf<JetlagContext>): CommandScene}
 
@@ -45,7 +46,8 @@ export class Bot {
             PowerupScene,
             ListCursesScene,
             CurseScene,
-            ImportScene
+            ImportScene,
+            ClaimedSubregionsScene
         ]
 
         const scenes = sceneTypes.map(sceneType => new sceneType(this.telegraf));

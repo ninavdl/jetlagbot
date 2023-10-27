@@ -21,4 +21,7 @@ export class Subregion extends GameObject {
 
     @Column({default: 0})
     areaInSquareKilometers: number = 0;
+
+    @Column({default: false})
+    attackLocked: boolean = false;
 }

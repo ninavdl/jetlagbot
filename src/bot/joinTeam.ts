@@ -17,14 +17,14 @@ export class JoinTeamScene extends CommandScene {
 
     setup() {
         this.enter(async (ctx) => {
-            const teams: Team[] = await ctx.gameLifecycle.runAction(ListTeams, {withPlayers: true});
+            const teams: Team[] = await ctx.gameLifecycle.runAction(ListTeams, { withPlayers: true });
 
             teams.forEach(team => {
                 this.action(team.uuid, ctx => this.assign(team, ctx));
             });
 
             return ctx.reply("Select team", Markup.inlineKeyboard(teams.map(team => Markup.button.callback(team.name, team.uuid)
-            )));
+            ), { columns: 1 }));
         });
 
     }

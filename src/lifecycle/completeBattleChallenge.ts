@@ -20,17 +20,19 @@ export class CompleteBattleChallenge extends GameLifecycleAction<void, CompleteB
         if(attack.attackedTeam.uuid != this.args.winningTeamUuid && attack.attackingTeam.uuid != this.args.winningTeamUuid) {
             throw new GameError("Team is not part of this attack");
         }
+
+        attack.subregion.attackLocked = true;
         
         if(this.args.winningTeamUuid == attack.attackingTeam.uuid) {
             attack.subregion.team = attack.attackingTeam;
-            await this.entityManager.save(attack.subregion);
             await this.notifier.notifyGroup(`Team '${escapeMarkdown(attack.attackingTeam.name)}' has conquered subregion ` +
             `'${escapeMarkdown(attack.subregion.name)}' from team '${escapeMarkdown(attack.attackedTeam.name)}`);
         } else {
-            await this.notifier.notifyGroup(`Team '${escapeMarkdown(attack.attackedTeam.name)}' has defended their region` +
+            await this.notifier.notifyGroup(`Team '${escapeMarkdown(attack.attackedTeam.name)}' has defended their region ` +
             `'${escapeMarkdown(attack.subregion.name)}' against an attack from team '${escapeMarkdown(attack.attackingTeam.name)}'`);
         }
 
         await this.entityManager.remove(attack);
+        await this.entityManager.save(attack.subregion);
     }
 }

@@ -12,6 +12,8 @@ import { ImportChallenges } from "../lifecycle/importChallenges";
 import { ImportBattleChallenges } from "../lifecycle/importBattleChallenges";
 import { ImportCurses } from "../lifecycle/ImportCurses";
 import { ImportSubregions } from "../lifecycle/importSubregions";
+import { CheckGameRunning } from "../lifecycle/checkGameRunning";
+import { CheckAdmin } from "../lifecycle/checkAdmin";
 
 type ImportType = "Challenges" | "Curses" | "BattleChallenges" | "Subregions"
 
@@ -63,29 +65,48 @@ export class ImportScene extends CommandScene<ImporterContext> {
 
     setup() {
         this.enter(async (ctx) => {
-            const cancelId = uuid();
+            try {
+                if (await ctx.gameLifecycle.runAction(CheckGameRunning, null)) {
+                    await ctx.reply("Game is already running");
+                    await ctx.scene.leave();
+                    return;
+                }
+                
+                if (!(await ctx.telegram.getChatAdministrators(ctx.chat.id)).map(member => member.user.id).includes(ctx.user.telegramUserId)) {
+                    await ctx.reply("User must be group admin");
+                    await ctx.scene.leave();
+                    return;
+                }
 
-            this.action(cancelId, async (ctx) => {
-                await ctx.editMessageReplyMarkup(null);
+                const cancelId = uuid();
+
+                this.action(cancelId, async (ctx) => {
+                    await ctx.editMessageReplyMarkup(null);
+                    await ctx.scene.leave();
+                });
+
+                await ctx.reply("What do you want to import?", Markup.inlineKeyboard(
+                    [
+                        ...Object.entries(this.importers).map(([key, importer]: [ImportType, Importer]) => {
+                            const id = uuid();
+                            this.action(id, async (ctx) => {
+                                this.uploadFile(ctx, key);
+                            })
+                            return Markup.button.callback(importer.name, id);
+                        }),
+                        Markup.button.callback("Cancel", cancelId)
+                    ],
+                    { columns: 1 }
+                ))
+            }
+            catch(e) {
+                console.log(e);
+                await ctx.reply("Error: " + e.message);
                 await ctx.scene.leave();
-            });
-
-            await ctx.reply("What do you want to import?", Markup.inlineKeyboard(
-                [
-                    ...Object.entries(this.importers).map(([key, importer]: [ImportType, Importer]) => {
-                        const id = uuid();
-                        this.action(id, async (ctx) => {
-                            this.uploadFile(ctx, key);
-                        })
-                        return Markup.button.callback(importer.name, id);
-                    }),
-                    Markup.button.callback("Cancel", cancelId)
-                ],
-                { columns: 1 }
-            ))
+            }
         });
 
-        this.on(message("document"), async(ctx) => {
+        this.on(message("document"), async (ctx) => {
             const file = await this.telegraf.telegram.getFile(ctx.message.document.file_id);
             const url = await this.telegraf.telegram.getFileLink(file.file_id);
 

@@ -4,6 +4,8 @@ import { message } from 'telegraf/filters';
 import { CreateTeam } from '../lifecycle/createTeam';
 import { Team } from '../models/Team';
 import { CommandScene } from './command';
+import { v4 as uuid } from "uuid";
+import { CheckGameRunning } from '../lifecycle/checkGameRunning';
 
 export class CreateTeamScene extends CommandScene {
     getInitCommand(): string {
@@ -15,8 +17,32 @@ export class CreateTeamScene extends CommandScene {
     }
 
     setup() {
-        this.enter(ctx => {
-            ctx.reply("Team name?", Markup.forceReply());
+        this.enter(async (ctx) => {
+            try {
+                if (await ctx.gameLifecycle.runAction(CheckGameRunning, null)) {
+                    await ctx.reply("Game is already running");
+                    await ctx.scene.leave();
+                    return;
+                }
+
+                const cancelUuid = uuid();
+
+                this.action(cancelUuid, async (ctx) => {
+                    await ctx.editMessageReplyMarkup(null);
+                    await ctx.scene.leave();
+                })
+
+                await ctx.reply("Creating team", Markup.inlineKeyboard([
+                    Markup.button.callback("Cancel", cancelUuid)
+                ]));
+
+                await ctx.reply("Team name?", Markup.forceReply());
+            }
+            catch (e) {
+                console.log(e);
+                await ctx.reply("Error " + e.message);
+                await ctx.scene.leave();
+            }
         });
 
         this.on(message("text"), async (ctx) => {
