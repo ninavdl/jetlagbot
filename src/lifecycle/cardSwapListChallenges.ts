@@ -15,6 +15,7 @@ export class CardSwapListChallenges extends GameLifecycleAction<Challenge[], Car
             throw new GameError("Not enough stars");
         }
 
+
         const otherTeam = await this.entityManager.getRepository(Team)
             .findOne({
                 where: {
@@ -28,6 +29,9 @@ export class CardSwapListChallenges extends GameLifecycleAction<Challenge[], Car
         if (otherTeam == null) {
             throw new GameError("Unknown team");
         }
+
+        player.team.stars -= this.args.stars;
+        await this.entityManager.save(player.team);
 
         return otherTeam.challengesOnHand;
     }
