@@ -3,18 +3,24 @@ import { Player } from "../models/Player";
 import { Team } from "../models/Team";
 import { User } from "../user";
 import { GameError, GameLifecycleAction } from "./lifecycle";
+import { ListTeamChallenges } from "./listTeamChallenges";
 import { SupplyPlayer } from "./supplyPlayer";
 
 export type CardSwapListChallengesArgs = { user: User, teamUuid: string, stars: number }
 
-export class CardSwapListChallenges extends GameLifecycleAction<Challenge[], CardSwapListChallengesArgs> {
-    public async run(): Promise<Challenge[]> {
+export type CardSwapListChallengeReturnType = {
+    otherChallenges: Challenge[],
+    ownChallenges: Challenge[],
+    totalNumberOfChallengesOnHand: number
+}
+
+export class CardSwapListChallenges extends GameLifecycleAction<CardSwapListChallengeReturnType, CardSwapListChallengesArgs> {
+    public async run(): Promise<CardSwapListChallengeReturnType> {
         const player: Player = await this.callSubAction(SupplyPlayer, { user: this.args.user, withTeam: true });
 
         if (player.team.stars < this.args.stars) {
             throw new GameError("Not enough stars");
         }
-
 
         const otherTeam = await this.entityManager.getRepository(Team)
             .findOne({
@@ -33,6 +39,12 @@ export class CardSwapListChallenges extends GameLifecycleAction<Challenge[], Car
         player.team.stars -= this.args.stars;
         await this.entityManager.save(player.team);
 
-        return otherTeam.challengesOnHand;
+        const ownChallenges: Challenge[] = await this.callSubAction(ListTeamChallenges, { user: this.args.user });
+
+        return {
+            otherChallenges: otherTeam.challengesOnHand,
+            ownChallenges: ownChallenges,
+            totalNumberOfChallengesOnHand: this.game.numberOfChallengesPerTeam
+        };
     }
 }

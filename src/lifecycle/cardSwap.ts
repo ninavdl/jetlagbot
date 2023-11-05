@@ -51,6 +51,10 @@ export class CardSwap extends GameLifecycleAction<Challenge[], CardSwapArgs> {
             ...otherTeam.challengesOnHand.filter(c => this.args.otherChallengeUuids.includes(c.uuid))
         ];
 
+        if(new Set(player.team.challengesOnHand.map(c => c.uuid)).size != this.game.numberOfChallengesPerTeam) {
+            throw new GameError(`Card swap would result in your team having an invalid number of challenges on your hand`);
+        }
+
         const challengesStolenFromOtherTeam = otherTeam.challengesOnHand.filter(c => this.args.otherChallengeUuids.includes(c.uuid));
         const challengesGivenToOtherTeam = ownChallenges.filter(c => this.args.ownChallengeUuids.includes(c.uuid));
 
@@ -59,15 +63,19 @@ export class CardSwap extends GameLifecycleAction<Challenge[], CardSwapArgs> {
             ...ownChallenges.filter(c => this.args.ownChallengeUuids.includes(c.uuid))
         ];
 
+        if(new Set(otherTeam.challengesOnHand.map(c => c.uuid)).size != this.game.numberOfChallengesPerTeam) {
+            throw new GameError("Card swap would result in the other team having an invalid number of challenges on your hand");
+        }
+
         await this.entityManager.save(player.team);
         await this.entityManager.save(otherTeam);
 
         await this.notifier.notifyTeam(otherTeam,
-            `*Team '${player.team.name}' has stolen your cards\\!*\n\n` +
-            `They took the following cards:\n`
-            + challengesStolenFromOtherTeam.map(c => c.toMarkdown()).join("\n") + "\n" +
-            `In return, they have given you the following cards:\n` +
-            challengesGivenToOtherTeam.map(c => c.toMarkdown()).join("\n")
+            `*Team '${player.team.name}' has stolen your cards\\!*\n` +
+            `They took the following cards:\n\n`
+            + challengesStolenFromOtherTeam.map(c => c.toMarkdown()).join("\n\n") + "\n\n" +
+            `\nIn return, they have given you the following cards:\n\n` +
+            challengesGivenToOtherTeam.map(c => c.toMarkdown()).join("\n\n")
         )
 
         return player.team.challengesOnHand;

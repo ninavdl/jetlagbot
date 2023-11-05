@@ -20,6 +20,7 @@ import { ListUnclaimedRegions } from "../lifecycle/listUnclaimedSubregions";
 import { Subregion } from "../models/Subregion";
 import { Region } from "../models/Region";
 import { DirectClaim } from "../lifecycle/directClaim";
+import { CardSwapScene } from "./powerup/cardSwap";
 
 type Powerup = {
     name: string,
@@ -56,7 +57,7 @@ export class PowerupScene extends CommandScene {
         "CardSwap": {
             name: "Card swap",
             description: "Pick three cards of another teams hand, and three cards of your hand, and swap them",
-            stars: 2,
+            stars: CardSwapScene.starsToDeduct,
             method: this.powerupCardSwap
         },
         "RedrawCards": {
@@ -157,141 +158,7 @@ export class PowerupScene extends CommandScene {
     }
 
     async powerupCardSwap(ctx: JetlagContext) {
-        try {
-            const cancelId = uuid();
-
-            this.action(cancelId, async (ctx) => {
-                await ctx.scene.leave();
-            });
-
-            const teams: Team[] = await ctx.gameLifecycle.runAction(ListTeams, { withPlayers: true });
-            await ctx.reply("Which team do you want to swap cards with?\nAs soon as you select a team, stars will be deducted!", Markup.inlineKeyboard([...
-                teams.filter(team => !team.players.map(player => player.telegramId).includes(ctx.user.telegramUserId)).map(team => {
-                    const id = uuid();
-
-                    this.action(id, async (ctx) => {
-                        this.powerupCardSwapSelectCardsInit(ctx, team.uuid);
-                    });
-
-                    return Markup.button.callback(team.name, id);
-                }),
-            Markup.button.callback("Cancel", cancelId)
-            ], { columns: 1 }));
-        }
-        catch (e) {
-            console.log(e);
-            await ctx.reply("Error: " + e.message);
-            await ctx.scene.leave();
-        }
-    }
-
-    async powerupCardSwapSelectCardsInit(ctx: JetlagContext, teamUuid: string) {
-        try {
-
-            const challenges: Challenge[] = await ctx.gameLifecycle.runAction(CardSwapListChallenges,
-                { user: ctx.user, teamUuid: teamUuid, stars: this.powerups["CardSwap"].stars });
-
-            await this.powerupCardSwapSelectCards(ctx, teamUuid, challenges, []);
-        }
-        catch (e) {
-            console.log(e);
-            await ctx.reply("Error: " + e.message);
-            await ctx.scene.leave();
-        }
-    }
-
-    async powerupCardSwapSelectCards(ctx: JetlagContext, teamUuid: string, challenges: Challenge[], selectedChallengeUuids: string[]) {
-        try {
-            await ctx.editMessageReplyMarkup(null);
-
-            const cancelId = uuid();
-
-            await ctx.reply(`Which card do you choose? (${selectedChallengeUuids.length + 1}/3)`, Markup.inlineKeyboard([
-                ...challenges.filter(challenge => !selectedChallengeUuids.includes(challenge.uuid)).map(challenge => {
-                    const id = uuid();
-                    this.action(id, async (ctx) => {
-                        selectedChallengeUuids.push(challenge.uuid);
-
-                        if (selectedChallengeUuids.length == 3) {
-                            await this.powerupCardSwapSelectOwnCardsInit(ctx, teamUuid, selectedChallengeUuids);
-                        } else {
-                            await this.powerupCardSwapSelectCards(ctx, teamUuid, challenges, selectedChallengeUuids);
-                        }
-                    })
-                    return Markup.button.callback(challenge.name, id);
-                }),
-                Markup.button.callback("Cancel", cancelId)
-            ], { columns: 1 }));
-        }
-        catch (e) {
-            console.log(e);
-            await ctx.reply("Error: " + e.message);
-            await ctx.scene.leave();
-        }
-    }
-
-    async powerupCardSwapSelectOwnCardsInit(ctx: JetlagContext, teamUuid: string, selectedChallengeUuids: string[]) {
-        try {
-            const ownChallenges: Challenge[] = await ctx.gameLifecycle.runAction(ListTeamChallenges, { user: ctx.user });
-
-            await this.powerupCardSwapSelectOwnCards(ctx, teamUuid, selectedChallengeUuids, ownChallenges, []);
-        }
-        catch (e) {
-            console.log(e);
-            await ctx.reply("Error: " + e.message);
-            await ctx.scene.leave();
-        }
-    }
-
-    async powerupCardSwapSelectOwnCards(ctx: JetlagContext, teamUuid: string, selectedChallengeUuids: string[], challenges: Challenge[], selectedOwnChallengeUuids: string[]) {
-        try {
-            await ctx.editMessageReplyMarkup(null);
-
-            const cancelId = uuid();
-
-            await ctx.reply(`Which card do you choose? (${selectedOwnChallengeUuids.length + 1}/3)`, Markup.inlineKeyboard([
-                ...challenges.filter(challenge => !selectedOwnChallengeUuids.includes(challenge.uuid)).map(challenge => {
-                    const id = uuid();
-                    this.action(id, async (ctx) => {
-                        selectedOwnChallengeUuids.push(challenge.uuid);
-
-                        if (selectedOwnChallengeUuids.length == 3) {
-                            await this.powerupCardSwapPerform(ctx, teamUuid, selectedChallengeUuids, selectedOwnChallengeUuids);
-                        } else {
-                            await this.powerupCardSwapSelectOwnCards(ctx, teamUuid, selectedChallengeUuids, challenges, selectedOwnChallengeUuids);
-                        }
-                    })
-                    return Markup.button.callback(challenge.name, id);
-                }),
-                Markup.button.callback("Cancel", cancelId)
-            ],
-                { columns: 1 }));
-        }
-        catch (e) {
-            console.log(e);
-            await ctx.reply("Error: " + e.message);
-            await ctx.scene.leave();
-        }
-    }
-
-    async powerupCardSwapPerform(ctx: JetlagContext, teamUuid: string, selectedChallengeUuids: string[], selectedOwnChallengeUuids: string[]) {
-        try {
-            await ctx.editMessageReplyMarkup(null);
-
-            const newCards: Challenge[] = await ctx.gameLifecycle.runAction(CardSwap, { user: ctx.user, teamUuid: teamUuid, ownChallengeUuids: selectedOwnChallengeUuids, otherChallengeUuids: selectedChallengeUuids });
-
-            await ctx.reply("Cards swapped\\!\nYour cards are now:\n" +
-                newCards.map(challenge => challenge.toMarkdown()).join("\n"),
-                { parse_mode: "MarkdownV2" }
-            )
-        }
-        catch (e) {
-            console.log(e);
-            await ctx.reply("Error: " + e.message);
-        }
-        finally {
-            await ctx.scene.leave();
-        }
+        await ctx.scene.enter(CardSwapScene.name)
     }
 
     async powerupRedrawCards(ctx: JetlagContext) {

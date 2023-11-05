@@ -19,13 +19,16 @@ import { ListCursesScene } from './bot/listCurses';
 import { CurseScene } from './bot/curse';
 import { ImportScene } from './bot/import';
 import { ClaimedSubregionsScene } from './bot/claimedSubregions';
+import { CardSwapScene } from './bot/powerup/cardSwap';
 
-type SceneConstructor = {new(telegraf: Telegraf<JetlagContext>): CommandScene}
+type SceneConstructor = { new(telegraf: Telegraf<JetlagContext>): CommandScene }
 
 export class Bot {
     telegraf: Telegraf<JetlagContext>;
     gameLifecycle: GameLifecycle;
     dataSource: DataSource;
+
+    private pollAnswers: { [pollId: string]: number[] } = {};
 
     constructor(token: string, dataSource: DataSource) {
         this.telegraf = new Telegraf<JetlagContext>(token);
@@ -47,7 +50,8 @@ export class Bot {
             ListCursesScene,
             CurseScene,
             ImportScene,
-            ClaimedSubregionsScene
+            ClaimedSubregionsScene,
+            CardSwapScene
         ]
 
         const scenes = sceneTypes.map(sceneType => new sceneType(this.telegraf));
@@ -60,24 +64,34 @@ export class Bot {
 
         this.telegraf.use((ctx, next) => {
             console.log(ctx);
+
+            if (ctx.pollAnswer != null) {
+                // Workaround: In scenes we can't listen to poll answers (https://github.com/telegraf/telegraf/issues/1538)
+                // therefore we collect poll answers globally
+                if (ctx.pollAnswer.poll_id in this.pollAnswers) {
+                    this.pollAnswers[ctx.pollAnswer.poll_id] = ctx.pollAnswer.option_ids;
+                }
+            }
+
             next();
         })
         this.telegraf.use((ctx, next) => {
             ctx.gameLifecycle = new GameLifecycle(this.dataSource, this.telegraf);
-            ctx.user = {
+            ctx.user = ctx.from == null ? null : {
                 displayName: ctx.from.username == null ? ctx.from.first_name : ctx.from.username,
                 telegramUserId: ctx.from.id
             }
+
+            ctx.bot = this;
             return next();
         });
         this.telegraf.use(session());
+
         this.telegraf.use(stage.middleware());
-
-
-
+        
         scenes.forEach(scene => scene.init());
 
-        this.telegraf.telegram.setMyCommands(scenes.map(scene => ({
+        this.telegraf.telegram.setMyCommands(scenes.filter(scene => scene.getInitCommand() != null).map(scene => ({
             command: "/" + scene.getInitCommand().toLowerCase(),
             description: scene.getDescription()
         })));
@@ -88,6 +102,18 @@ export class Bot {
 
         process.once('SIGINT', () => this.telegraf.stop('SIGINT'))
         process.once('SIGTERM', () => this.telegraf.stop('SIGTERM'))
+    }
+
+    collectAnswersToPoll(pollId: string) {
+        this.pollAnswers[pollId] = [];
+    }
+
+    stopCollectingAnswersToPoll(pollId: string) {
+        delete this.pollAnswers[pollId];
+    }
+
+    getPollAnswers(pollId: string) {
+        return this.pollAnswers[pollId];
     }
 }
 
