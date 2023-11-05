@@ -81,7 +81,8 @@ export class CompleteChallenge extends GameLifecycleAction<void, CompleteChallen
 
 
         await this.notifier.notifyGroup(
-            `Team ${escapeMarkdown(team.name)} has claimed new subregions: ${subregions.map(subregion => escapeMarkdown(subregion.name)).join(", ")}`
+            `Team ${escapeMarkdown(team.name)} has claimed new subregions: _${subregions.map(subregion => escapeMarkdown(subregion.name)).join(", ")}_\\.\n` +
+            `They completed the following challenge:\n\n${challenge.toMarkdown()}`
         );
 
         await this.notifier.notifyTeamById(player.team.uuid, `Your new challenge is:\n\n${newChallenge.toMarkdown()}`)
