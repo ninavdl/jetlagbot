@@ -1,26 +1,25 @@
-import { setuid } from "process";
 import { CommandScene } from "./command";
 import { JetlagContext } from "../context";
 import { Markup, Scenes } from "telegraf";
 import { v4 as uuid } from "uuid";
 import { message } from "telegraf/filters";
-import { File } from "buffer";
 import { parse } from "csv-parse/sync";
 
 import fetch from "node-fetch";
 import { ImportChallenges } from "../lifecycle/importChallenges";
 import { ImportBattleChallenges } from "../lifecycle/importBattleChallenges";
 import { ImportCurses } from "../lifecycle/ImportCurses";
-import { ImportSubregions } from "../lifecycle/importSubregions";
-import { CheckGameRunning } from "../lifecycle/checkGameRunning";
-import { CheckAdmin } from "../lifecycle/checkAdmin";
+import { GetGame } from "../lifecycle/getGame";
+import { ImportGeoJson } from "../lifecycle/importGeoJson";
+import { Game } from "../models/Game";
 
-type ImportType = "Challenges" | "Curses" | "BattleChallenges" | "Subregions"
+type ImportType = "Challenges" | "Curses" | "BattleChallenges" | "GeoJson"
 
 type Importer = {
     name: string,
-    keys: string[],
+    keys?: string[],
     method: (ctx: JetlagContext, file) => Promise<void>
+    raw?: boolean
 }
 
 interface ImporterSceneSession extends Scenes.SceneSession {
@@ -48,10 +47,10 @@ export class ImportScene extends CommandScene<ImporterContext> {
             method: this.importBattleChallenges,
             keys: ["title", "description", "timeLimit"]
         },
-        "Subregions": {
-            name: "Subregions",
-            method: this.importSubregions,
-            keys: ["name", "regionName", "nuts3Code", "area"]
+        "GeoJson": {
+            name: "GeoJson",
+            method: this.importGeoJson,
+            raw: true
         }
     }
 
@@ -66,7 +65,8 @@ export class ImportScene extends CommandScene<ImporterContext> {
     setup() {
         this.enter(async (ctx) => {
             try {
-                if (await ctx.gameLifecycle.runAction(CheckGameRunning, null)) {
+                const game: Game = await ctx.gameLifecycle.runAction(GetGame, null)
+                if (game.running) {
                     await ctx.reply("Game is already running");
                     await ctx.scene.leave();
                     return;
@@ -117,13 +117,19 @@ export class ImportScene extends CommandScene<ImporterContext> {
             }
 
             const importer = this.importers[ctx.session.importType]
-            const data = parse(await response.text(), {
-                delimiter: ";",
-                encoding: "utf-8",
-                columns: importer.keys,
-                fromLine: 2 // skip header line
-            });
 
+            let data: any;
+            if(importer.raw == null || !importer.raw) {
+                data = parse(await response.text(), {
+                    delimiter: ";",
+                    encoding: "utf-8",
+                    columns: importer.keys,
+                    fromLine: 2 // skip header line
+                });
+            }
+            else {
+                data = Buffer.from(await response.arrayBuffer());
+            }
             await this.importers[ctx.session.importType].method.call(this, ctx, data);
 
         })
@@ -211,19 +217,13 @@ export class ImportScene extends CommandScene<ImporterContext> {
 
     }
 
-    async importSubregions(ctx: ImporterContext, data: { name: string, regionName: string, area: string }[]) {
+    async importGeoJson(ctx: ImporterContext, data: Buffer) {
         try {
-            const n = await ctx.gameLifecycle.runAction(ImportSubregions, {
-                items: data.map(input => ({
-                    name: input.name,
-                    regionName: input.regionName,
-                    areaInSquareKilometers: parseInt(input.area)
-                }))
-            });
+            const importedSubregion: number = await ctx.gameLifecycle.runAction(ImportGeoJson, {geoJson: data.toString("utf8")});
 
-            await ctx.reply(`Imported ${n} subregions`);
+            await ctx.reply(`Imported ${importedSubregion} subregions from GeoJson`);
         }
-        catch (e) {
+        catch(e) {
             console.log(e);
             await ctx.reply("Error: " + e.message);
         }

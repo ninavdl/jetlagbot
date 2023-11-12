@@ -10,7 +10,7 @@ export class GameError extends Error {
 }
 
 type ActionConstructor<ArgsType, ActionType> = {
-    new(game: Game, gameId: string, entityManger: EntityManager, args: ArgsType, notifier: Notifier, scheduler: Scheduler): ActionType;
+    new(game: Game, entityManger: EntityManager, args: ArgsType, notifier: Notifier, scheduler: Scheduler): ActionType;
 }
 
 export class GameLifecycle {
@@ -24,24 +24,31 @@ export class GameLifecycle {
     public async runAction<ActionType extends GameLifecycleAction<ReturnType, ArgsType>, ArgsType, ReturnType>(
         actionConstructor: ActionConstructor<ArgsType, ActionType>,
         args: ArgsType,
+        gameUuid?: string
     ): Promise<ReturnType> {
         return this.dataSource.transaction(async (entityManager) => {
-            // For now, the current game is always the last created one.
-            // In the future, this should support running multiple bots in parallel.
-            let games = await entityManager.getRepository(Game).find({
-                order: {
-                    createdAt: 'DESC'
-                },
-                take: 1
-            });
+            let game: Game;
+            if(gameUuid == null) {
+                // For now, the current game is always the last created one.
+                // In the future, this should support running multiple bots in parallel.
+                let games = await entityManager.getRepository(Game).find({
+                    order: {
+                        createdAt: 'DESC'
+                    },
+                    take: 1
+                });
 
-            const game = games.length == 0 ? null : games[0];
+                game = games.length == 0 ? null : games[0];
+            } else {
+                game = await entityManager.getRepository(Game).findOneBy({
+                    uuid: gameUuid
+                });
+            }
 
             const notifier = new Notifier(game, entityManager, this.telegraf);
 
             let action = new actionConstructor(
-                games.length == 0 ? null : games[0],
-                this.gameId,
+                game,
                 entityManager,
                 args,
                 notifier,
@@ -55,7 +62,6 @@ export class GameLifecycle {
 export abstract class GameLifecycleAction<ReturnType, ArgType> {
     constructor(
         protected game: Game,
-        protected gameId: string,
         protected entityManager: EntityManager,
         protected args: ArgType,
         protected notifier: Notifier,
@@ -74,7 +80,6 @@ export abstract class GameLifecycleAction<ReturnType, ArgType> {
     ): Promise<ReturnType2> {
         let subAction: ActionType = new actionConstructor(
             this.game,
-            this.gameId,
             this.entityManager,
             args,
             this.notifier,

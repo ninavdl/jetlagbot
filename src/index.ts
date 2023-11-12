@@ -12,6 +12,14 @@ import { BattleChallenge } from "./models/BattleChallenge";
 import { Attack } from "./models/Attack";
 import { Curse } from "./models/Curse";
 import { CurseAssignment } from "./models/CurseAssignment";
+import { Web } from "./web/index"
+import { Config } from "./config";
+
+const config: Config = {
+    mapboxPulicKey: process.env.JETLAG_MAPBOX_PUBLIC_KEY,
+    telegramBotToken: process.env.JETLAG_BOT_TOKEN,
+    publicUrl: process.env.JETLAG_PUBLIC_URL
+}
 
 const datasource = new DataSource({
     type: "sqlite",
@@ -21,8 +29,10 @@ const datasource = new DataSource({
     synchronize: true
 });
 
+const web = new Web(8080, datasource, config);
+
 datasource.initialize();
 
-const bot = new Bot(process.env.JETLAG_BOT_TOKEN, datasource);
+const bot = new Bot(process.env.JETLAG_BOT_TOKEN, datasource, config);
 
 bot.run();

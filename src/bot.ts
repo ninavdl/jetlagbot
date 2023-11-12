@@ -20,17 +20,18 @@ import { CurseScene } from './bot/curse';
 import { ImportScene } from './bot/import';
 import { ClaimedSubregionsScene } from './bot/claimedSubregions';
 import { CardSwapScene } from './bot/powerup/cardSwap';
+import { MapScene } from './bot/map';
+import { Config } from './config';
 
 type SceneConstructor = { new(telegraf: Telegraf<JetlagContext>): CommandScene }
 
 export class Bot {
     telegraf: Telegraf<JetlagContext>;
     gameLifecycle: GameLifecycle;
-    dataSource: DataSource;
 
     private pollAnswers: { [pollId: string]: number[] } = {};
 
-    constructor(token: string, dataSource: DataSource) {
+    constructor(token: string, private dataSource: DataSource, private config: Config) {
         this.telegraf = new Telegraf<JetlagContext>(token);
         this.dataSource = dataSource;
 
@@ -51,7 +52,8 @@ export class Bot {
             CurseScene,
             ImportScene,
             ClaimedSubregionsScene,
-            CardSwapScene
+            CardSwapScene,
+            MapScene
         ]
 
         const scenes = sceneTypes.map(sceneType => new sceneType(this.telegraf));
@@ -83,6 +85,8 @@ export class Bot {
             }
 
             ctx.bot = this;
+
+            ctx.config = this.config;
             return next();
         });
         this.telegraf.use(session());

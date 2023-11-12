@@ -50,4 +50,7 @@ export class Game extends GameObject {
 
     @Column({default: 3})
     areaBonus: number = 3;
+
+    @Column({nullable: true, select: false})
+    geoJson: string
 }

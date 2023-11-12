@@ -1,6 +1,8 @@
 import { JetlagContext } from "../context";
 import { Context, Scenes, Telegraf } from "telegraf";
 import { GameError } from "../lifecycle/lifecycle";
+import { GetGame } from "../lifecycle/getGame";
+import { Game } from "../models/Game";
 
 export abstract class CommandScene<C extends JetlagContext = JetlagContext> extends Scenes.BaseScene<C> {
     sceneId: string;
@@ -43,6 +45,13 @@ export abstract class CommandScene<C extends JetlagContext = JetlagContext> exte
     protected assertGroupChat(ctx: JetlagContext) {
         if (ctx.chat.type != "group" && ctx.chat.type != "supergroup") {
             throw new GameError("This command has to be executed in a group");
+        }
+    }
+
+    protected async assertGameNotRunning(ctx: JetlagContext) {
+        const game: Game = await ctx.gameLifecycle.runAction(GetGame, null);
+        if (game.running) {
+            throw new GameError("Game is already running");
         }
     }
 

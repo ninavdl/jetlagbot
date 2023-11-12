@@ -13,6 +13,9 @@ export class Subregion extends GameObject {
     @Column()
     name: string;
 
+    @Column()
+    id: string;
+
     @ManyToOne(() => Team, (team) => team.claimedSubregions)
     team: Relation<Team>;
 
