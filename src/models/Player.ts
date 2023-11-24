@@ -18,7 +18,7 @@ export class Player extends GameObject {
     @Column()
     telegramId: number;
 
-    @Column({ nullable: true })
+    @Column({ nullable: true, type: "bigint" })
     telegramChatId: number = null;
 
     @Column({default: false})

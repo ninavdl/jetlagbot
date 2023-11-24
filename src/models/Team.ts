@@ -51,9 +51,9 @@ export class Team extends GameObject {
     completedBattleChallenges: Promise<BattleChallenge[]>
 
     public static async replaceAllChallengesOnHand(entityManager: EntityManager, teamUuid: string, challengeUuids: string[]) {
-        await entityManager.query("DELETE FROM team_challenges_on_hand_challenge WHERE teamUuid = $1", [teamUuid]);
+        await entityManager.query('DELETE FROM team_challenges_on_hand_challenge WHERE "teamUuid" = $1', [teamUuid]);
         for (let challengeUuid of challengeUuids) {
-            await entityManager.query("INSERT INTO team_challenges_on_hand_challenge (teamUuid, challengeUuid) VALUES ($1, $2);",
+            await entityManager.query('INSERT INTO team_challenges_on_hand_challenge ("teamUuid", "challengeUuid") VALUES ($1, $2);',
             [teamUuid, challengeUuid]);
         }
     }

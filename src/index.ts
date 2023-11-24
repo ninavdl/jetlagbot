@@ -18,14 +18,27 @@ import { Config } from "./config";
 const config: Config = {
     mapboxPulicKey: process.env.JETLAG_MAPBOX_PUBLIC_KEY,
     telegramBotToken: process.env.JETLAG_BOT_TOKEN,
-    publicUrl: process.env.JETLAG_PUBLIC_URL
+    publicUrl: process.env.JETLAG_PUBLIC_URL,
+    database: {
+        host: process.env.JETLAG_PG_HOST,
+        port: parseInt(process.env.JETLAG_PG_PORT),
+        user: process.env.JETLAG_PG_USER,
+        password: process.env.JETLAG_PG_PASSWORD,
+        database: process.env.JETLAG_PG_DATABASE
+    }
 }
 
 const datasource = new DataSource({
-    type: "sqlite",
-    database: "./db.sqlite",
+    type: "postgres",
+
+    host: config.database.host,
+    port: config.database.port,
+    username: config.database.user,
+    password: config.database.password,
+
     entities: [Game, Team, Player, Region, Subregion, Challenge, BattleChallenge, Attack, Curse, CurseAssignment],
-    logging: "all",
+    
+    logging: true,
     synchronize: true
 });
 

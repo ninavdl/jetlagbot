@@ -41,7 +41,7 @@ export class ListAttackableSubregions extends GameLifecycleAction<Subregion[], L
             .where("region.gameUuid = :game_uuid", {game_uuid: this.game.uuid})
             .andWhere("claimedTeam.uuid != :team_uuid", {team_uuid: player.team.uuid})
             .andWhere("currentAttack.uuid is null")
-            .andWhere("subregion.attackLocked = 0")
+            .andWhere("subregion.attackLocked = FALSE")
             .getMany()
     }
 }

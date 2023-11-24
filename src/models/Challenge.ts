@@ -33,9 +33,9 @@ export class Challenge extends GameObject {
             entityManager.query(
                 `SELECT uuid FROM challenge
             WHERE uuid NOT IN (
-                SELECT challengeUuid FROM team_completed_challenges_challenge WHERE teamUuid = $1
+                SELECT "challengeUuid" FROM team_completed_challenges_challenge WHERE "teamUuid" = $1
             )
-            AND gameUuid = $2;`, [teamUuid, gameUuid]);
+            AND "gameUuid" = $2;`, [teamUuid, gameUuid]);
         return result.map(obj => obj.uuid);
     }
 
@@ -43,12 +43,12 @@ export class Challenge extends GameObject {
         const result: { uuid: string }[] = await entityManager.query(
             `SELECT uuid FROM challenge
             WHERE uuid NOT IN (
-                SELECT challengeUuid FROM team_challenges_on_hand_challenge WHERE teamUuid = $1
+                SELECT "challengeUuid" FROM team_challenges_on_hand_challenge WHERE "teamUuid" = $1
             )
             AND uuid NOT IN (
-                SELECT challengeUuid FROM team_completed_challenges_challenge WHERE teamUuid = $1
+                SELECT "challengeUuid" FROM team_completed_challenges_challenge WHERE "teamUuid" = $1
             )
-            AND gameUuid = $2;`, [teamUuid, gameUuid]);
+            AND "gameUuid" = $2;`, [teamUuid, gameUuid]);
         return result.map(obj => obj.uuid);
     }
 

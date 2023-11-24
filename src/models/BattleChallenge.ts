@@ -33,8 +33,8 @@ export class BattleChallenge extends GameObject {
     public static async findUuidsNotCompletedByTeams(entityManager: EntityManager, team1Uuid: string, team2Uuid: string, gameUuid: string): Promise<string[]> {
         const result: {uuid: string}[] = await entityManager.query(`
             select uuid from battle_challenge where uuid not in (
-                select battleChallengeUuid from team_completed_battle_challenges_battle_challenge where teamUuid = $1 or teamUuid = $2
-            ) and gameUuid = $3
+                select "battleChallengeUuid" from team_completed_battle_challenges_battle_challenge where "teamUuid" = $1 or "teamUuid" = $2
+            ) and "gameUuid" = $3
         `, [team1Uuid, team2Uuid, gameUuid]);
 
         return result.map(row => row.uuid);

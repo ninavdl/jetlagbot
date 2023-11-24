@@ -10,7 +10,7 @@ export class ListUnclaimedRegions extends GameLifecycleAction<Subregion[], void>
         return subregionRepository.createQueryBuilder("subregion")
             .leftJoinAndSelect("subregion.region", "region")
             .where("subregion.teamUuid is null")
-            .andWhere("gameUuid = :game_uuid", { game_uuid: this.game.uuid })
+            .andWhere("region.gameUuid = :game_uuid", { game_uuid: this.game.uuid })
             .getMany();
     }
 }

@@ -38,7 +38,8 @@ export class Game extends GameObject {
     allCurses: Relation<Curse>[];
     
     @Column({
-        nullable: true
+        nullable: true,
+        type: "bigint"
     })
     mainTelegramChatId: number;
 

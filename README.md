@@ -87,6 +87,11 @@ The bot requires the following environment variables as configuration:
 * `JETLAG_MAPBOX_PUBLIC_KEY`: A public key for mapbox.com (required to show maps)
 * `JETLAG_BOT_TOKEN`: Token of a telegram bot
 * `JETLAG_PUBLIC_URL`: URL where the bots HTTP server is reachable from the internet
+* `JETLAG_PG_HOST`: Hostname of postgresql database server
+* `JETLAG_PG_PORT`: Port of postgresql database server
+* `JETLAG_PG_USER`: Username for postgres database server
+* `JETLAG_PG_PASSWORD`: Password for postgres database server
+* `JETLAG_PG_DATABASE`: Postgres database name
 
 To install the bots dependencies, run `npm install`.
 
