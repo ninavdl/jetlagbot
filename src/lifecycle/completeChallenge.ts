@@ -9,7 +9,7 @@ import { SupplyPlayer } from "./supplyPlayer";
 import { Player } from "../models/Player";
 import { chooseRandom, escapeMarkdown } from "../util";
 
-export type CompleteChallengeArgs = { user: User, challengeUuid: string, subregionUuids: string[] }
+export type CompleteChallengeArgs = { user: User, challengeUuid: string, subregionUuids: string[], selectedStars?: number }
 
 export class CompleteChallenge extends GameLifecycleAction<void, CompleteChallengeArgs>{
     public async run() {
@@ -47,6 +47,19 @@ export class CompleteChallenge extends GameLifecycleAction<void, CompleteChallen
             throw new GameError("Invalid number of subregions, expected " + challenge.awardsSubregions);
         }
 
+        let stars: number;
+        if (this.args.selectedStars != null) {
+            if (!challenge.dynamicNumberOfStars) {
+                throw new GameError("Challenge has static number of stars");
+            }
+            if(this.args.selectedStars > challenge.stars) {
+                throw new GameError("Too many stars");
+            }
+            stars = this.args.selectedStars;
+        } else {
+            stars = challenge.stars;
+        }
+
         subregions.forEach(subregion => {
             if (subregion.team != null) {
                 throw new GameError("Subregion " + subregion.name + " was already claimed");
@@ -55,7 +68,7 @@ export class CompleteChallenge extends GameLifecycleAction<void, CompleteChallen
 
         // Update challenge and award team stars and subregions
 
-        team.stars += challenge.stars;
+        team.stars += stars;
 
         subregions.forEach(subregion => {
             subregion.team = team;
@@ -82,6 +95,7 @@ export class CompleteChallenge extends GameLifecycleAction<void, CompleteChallen
 
         await this.notifier.notifyGroup(
             `Team ${escapeMarkdown(team.name)} has claimed new subregions: _${subregions.map(subregion => escapeMarkdown(subregion.name)).join(", ")}_\\.\n` +
+            (challenge.dynamicNumberOfStars ? `They have gained ${stars} stars\\.\n` : "") +
             `They completed the following challenge:\n\n${challenge.toMarkdown()}`
         );
 

@@ -119,6 +119,7 @@ A CSV with the following columns (in that order) is required:
 * Description
 * Number of stars
 * Number of subregions claimed by the challenge
+* Is the number of gained stars selectable by the team? ("true" or "false")
 
 #### Battle Challenges
 

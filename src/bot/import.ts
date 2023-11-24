@@ -35,7 +35,7 @@ export class ImportScene extends CommandScene<ImporterContext> {
         "Challenges": {
             name: "Challenges",
             method: this.importChallenges,
-            keys: ["title", "description", "stars", "claimsSubregions"]
+            keys: ["title", "description", "stars", "claimsSubregions", "dynamic"]
         },
         "Curses": {
             name: "Curses",
@@ -151,14 +151,15 @@ export class ImportScene extends CommandScene<ImporterContext> {
         }
     }
 
-    async importChallenges(ctx: ImporterContext, data: { title: string, description: string, stars: string, claimsSubregions: string }[]) {
+    async importChallenges(ctx: ImporterContext, data: { title: string, description: string, stars: string, claimsSubregions: string, dynamic: string }[]) {
         try {
             const n = await ctx.gameLifecycle.runAction(ImportChallenges, {
                 items: data.map(input => ({
                     name: input.title,
                     description: input.description,
                     stars: parseInt(input.stars),
-                    subregions: parseInt(input.claimsSubregions)
+                    subregions: parseInt(input.claimsSubregions),
+                    dynamicNumberOfStars: input.dynamic.toLowerCase() == "true"
                 }))
             });
 

@@ -26,6 +26,9 @@ export class Challenge extends GameObject {
     stars: number;
 
     @Column()
+    dynamicNumberOfStars: boolean
+
+    @Column()
     awardsSubregions: number;
 
     public static async findUuidsNotCompletedByTeam(entityManager: EntityManager, teamUuid: string, gameUuid: string): Promise<string[]> {

@@ -6,7 +6,8 @@ export type ImportChallengesArgs = {
         name: string,
         description: string,
         stars: number,
-        subregions: number
+        subregions: number,
+        dynamicNumberOfStars: boolean
     }[]
 }
 
@@ -20,6 +21,7 @@ export class ImportChallenges extends GameLifecycleAction<number, ImportChalleng
                 challenge.name = input.name;
                 challenge.description = input.description;
                 challenge.stars = input.stars;
+                challenge.dynamicNumberOfStars = input.dynamicNumberOfStars;
                 return challenge
             })
         )).length;

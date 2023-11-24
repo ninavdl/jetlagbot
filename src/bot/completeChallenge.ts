@@ -13,6 +13,8 @@ import { sortByPropertyAlphabetical } from "../util";
 interface CompleteChallengeSession extends Scenes.SceneSession {
     challengeUuid: string;
     numberOfSubregions: number;
+    maxStars: number;
+    selectedStars: number;
     currentSelectedRegionUuid: string;
     subregionUuids: string[]
 
@@ -37,6 +39,8 @@ export class CompleteChallengeScene extends CommandScene<CompleteChallengeContex
             this.assertPrivateChat(ctx);
 
             ctx.session.numberOfSubregions = null;
+            ctx.session.maxStars = null;
+            ctx.session.selectedStars = null;
             ctx.session.subregionUuids = [];
 
             const teamChallenges: Challenge[] =
@@ -45,7 +49,7 @@ export class CompleteChallengeScene extends CommandScene<CompleteChallengeContex
 
             await ctx.reply("Which challenge did you complete?", Markup.inlineKeyboard(
                 [
-                    ... sortByPropertyAlphabetical(teamChallenges, challenge => challenge.name).map(challenge => Markup.button.callback(challenge.name, `challenge-${challenge.uuid}`)),
+                    ...sortByPropertyAlphabetical(teamChallenges, challenge => challenge.name).map(challenge => Markup.button.callback(challenge.name, `challenge-${challenge.uuid}`)),
                     Markup.button.callback("Cancel", "cancel")
                 ],
                 { columns: 1 }
@@ -77,6 +81,14 @@ export class CompleteChallengeScene extends CommandScene<CompleteChallengeContex
 
             await this.complete(ctx);
         }));
+
+        this.action(/^stars-([0-9]+)$/, this.handleErrors(async (ctx) => {
+            ctx.session.selectedStars = parseInt(ctx.match[1]);
+
+            await ctx.editMessageReplyMarkup(null);
+
+            await this.complete(ctx);
+        }))
 
         this.action("forceComplete", this.handleErrors(async (ctx) => {
             await ctx.editMessageReplyMarkup(null);
@@ -137,6 +149,7 @@ export class CompleteChallengeScene extends CommandScene<CompleteChallengeContex
         if (ctx.session.numberOfSubregions == null) {
             const challenge: Challenge = await ctx.gameLifecycle.runAction(GetChallenge, { uuid: ctx.session.challengeUuid });
             ctx.session.numberOfSubregions = challenge.awardsSubregions;
+            ctx.session.maxStars = challenge.dynamicNumberOfStars ? challenge.stars : null;
         }
 
         const subregions = ctx.session.subregionsByRegionUuids[ctx.session.currentSelectedRegionUuid];
@@ -151,12 +164,29 @@ export class CompleteChallengeScene extends CommandScene<CompleteChallengeContex
         ))
     }
 
+    public async offerStars(ctx: CompleteChallengeContext) {
+        const buttons = [];
+        for (let i = 0; i <= ctx.session.maxStars; i++) {
+            buttons.push(
+                Markup.button.callback(`${i} ⭐️`, `stars-${i}`)
+            )
+        }
+
+        await ctx.reply("This rewards a dynamic number of stars. How many stars should you be awarded?",
+            Markup.inlineKeyboard(buttons))
+    }
+
     public async complete(ctx: CompleteChallengeContext, force: boolean = false) {
         if (ctx.session.subregionUuids.length == ctx.session.numberOfSubregions || force) {
+            if (ctx.session.maxStars != null && ctx.session.selectedStars == null) {
+                return await this.offerStars(ctx);
+            }
+
             await ctx.gameLifecycle.runAction(CompleteChallenge, {
                 user: ctx.user,
                 challengeUuid: ctx.session.challengeUuid,
-                subregionUuids: ctx.session.subregionUuids
+                subregionUuids: ctx.session.subregionUuids,
+                selectedStars: ctx.session.selectedStars
             });
 
             await ctx.reply("Challenge marked as completed!");
