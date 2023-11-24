@@ -42,15 +42,6 @@ export class Game extends GameObject {
     })
     mainTelegramChatId: number;
 
-    @Column({default: 1})
-    pointsPerSubregion: number = 1;
-
-    @Column({default: 2})
-    pointsPerRegion: number = 2;
-
-    @Column({default: 3})
-    areaBonus: number = 3;
-
     @Column({nullable: true, select: false})
     geoJson: string
 }

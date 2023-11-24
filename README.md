@@ -53,7 +53,7 @@ You can claim the subregion you are currently in without completing a challenge.
 
 * For each subregion a team has claimed, they are rewarded one point.
 * For each region in which a team has claimed at least one subregino, they are rewarded two points.
-* For each team, the sum of the area of their claimed subregions is calculated. The team with the highest total area gets three points.
+* For each team, the sum of the area of their claimed subregions is calculated. For each 100km², the team gets one point.
 
 ## Example
 

@@ -23,21 +23,22 @@ export class GetLeaderboard extends GameLifecycleAction<LeaderboardEntry[], void
             .getMany();
 
         const leaderboard = teams.map(team => {
+            const area = team.claimedSubregions.reduce((area, subregion) => area + subregion.areaInSquareKilometers, 0);
+
             const entry: LeaderboardEntry = {
                 name: team.name,
                 subregions: team.claimedSubregions.length,
                 uniqueRegions: new Set(team.claimedSubregions.flatMap(subregion => subregion.region.uuid)).size,
-                area: team.claimedSubregions.reduce((area, subregion) => area + subregion.areaInSquareKilometers, 0),
+                area: Math.round(area * 100) / 100, // round to 2 decimal places
                 points: 0
             };
 
-            entry.points = entry.subregions * this.game.pointsPerSubregion
-                + entry.uniqueRegions * this.game.pointsPerRegion;
+            entry.points = entry.subregions
+                + entry.uniqueRegions * 2
+                + Math.floor(entry.area / 100);
 
             return entry
         });
-
-        leaderboard.sort((a, b) => b.area - a.area)[0].points += this.game.areaBonus;
 
         return leaderboard.sort((a, b) => b.points - a.points);
     }

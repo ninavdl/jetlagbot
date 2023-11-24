@@ -19,8 +19,8 @@ export class LeaderboardScene extends CommandScene {
                 const leaderboard: LeaderboardEntry[] = await ctx.gameLifecycle.runAction(GetLeaderboard, null);
 
                 const leaderboardFormatted = leaderboard.map((entry, i) =>
-                    `${i < trophies.length ? trophies[i] : (i+1) + "\\."} *${escapeMarkdown(entry.name)}*: ${entry.points} \\(${entry.subregions}, ${entry.uniqueRegions}, ` + 
-                    `${entry.area}\\) \\- ${entry.points} points`
+                    `${i < trophies.length ? trophies[i] : (i+1) + "\\."} *${escapeMarkdown(entry.name)}* \\(${entry.subregions}, ${entry.uniqueRegions}, ` + 
+                    `${escapeMarkdown(entry.area.toString())}\\): ${entry.points} points`
                     ).join("\n");
                 await ctx.reply(`The current leaderboard is:\n\n${leaderboardFormatted}\n\n` +
                 `_\\(Subregions, Regions, Area\\)_`, { parse_mode: "MarkdownV2" });
