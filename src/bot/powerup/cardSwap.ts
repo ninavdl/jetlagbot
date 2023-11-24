@@ -76,7 +76,8 @@ export class CardSwapScene extends CommandScene<CardSwapContext> {
         ctx.session.otherChallengesOnHandUuids = challenges.otherChallenges.map(c => c.uuid);
 
         await ctx.reply(`The other team has the following challenges on their hand:\n\n`
-            + challenges.otherChallenges.map(challenge => challenge.toMarkdown()).join("\n\n"), { parse_mode: "MarkdownV2" });
+            + challenges.otherChallenges.map(challenge => challenge.toMarkdown()).join("\n\n"),
+            { parse_mode: "MarkdownV2", disable_web_page_preview: true });
 
         const otherChallengesPoll = await ctx.replyWithPoll(
             `Which challenges of the other team do you pick? (select at most ${numberOfChallengesToPick})`,
@@ -89,7 +90,7 @@ export class CardSwapScene extends CommandScene<CardSwapContext> {
 
         await ctx.reply(`You have the following challenges on your hand:\n\n`
             + challenges.ownChallenges.map(challenge => challenge.toMarkdown()).join("\n\n"),
-            { parse_mode: "MarkdownV2" });
+            { parse_mode: "MarkdownV2", disable_web_page_preview: true });
 
         const ownChallengesPoll = await ctx.replyWithPoll(
             `Which of your own challenges do you pick? (select as many as in the previous poll)`,
@@ -167,7 +168,8 @@ export class CardSwapScene extends CommandScene<CardSwapContext> {
 
             await ctx.scene.leave();
             await ctx.reply(`*Cards swapped successfully\\.* Your cards are now:\n\n`
-                + result.map(challenge => challenge.toMarkdown()).join("\n\n"), { parse_mode: "MarkdownV2" });
+                + result.map(challenge => challenge.toMarkdown()).join("\n\n"),
+                { parse_mode: "MarkdownV2", disable_web_page_preview: true });
             ctx.bot.stopCollectingAnswersToPoll(ctx.session.otherChallengesPollId);
             ctx.bot.stopCollectingAnswersToPoll(ctx.session.ownChallengesPollId);
 
