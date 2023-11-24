@@ -6,6 +6,7 @@ import { GameObject } from "./GameObject";
 import { Challenge } from "./Challenge";
 import { Attack } from "./Attack";
 import { CurseAssignment } from "./CurseAssignment";
+import { BattleChallenge } from "./BattleChallenge";
 
 
 @Entity()
@@ -44,6 +45,10 @@ export class Team extends GameObject {
 
     @OneToOne(() => Attack, (attack) => attack.attackedTeam)
     currentlyAttacked: Relation<Attack>
+
+    @ManyToMany(() => BattleChallenge, (battleChallenge) => battleChallenge.completedByTeams)
+    @JoinTable()
+    completedBattleChallenges: Promise<BattleChallenge[]>
 
     public static async replaceAllChallengesOnHand(entityManager: EntityManager, teamUuid: string, challengeUuids: string[]) {
         await entityManager.query("DELETE FROM team_challenges_on_hand_challenge WHERE teamUuid = $1", [teamUuid]);

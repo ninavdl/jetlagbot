@@ -25,7 +25,7 @@ const datasource = new DataSource({
     type: "sqlite",
     database: "./db.sqlite",
     entities: [Game, Team, Player, Region, Subregion, Challenge, BattleChallenge, Attack, Curse, CurseAssignment],
-    logging: true,
+    logging: "all",
     synchronize: true
 });
 

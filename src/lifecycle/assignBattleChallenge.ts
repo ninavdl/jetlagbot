@@ -34,10 +34,13 @@ export class AssignBattleChallenge extends GameLifecycleAction<Attack, AssignBat
             throw new GameError("Can't attack subregion claimed by yourself");
         }
 
+        const battleChallengeUuids = await BattleChallenge.findUuidsNotCompletedByTeams(
+            this.entityManager, player.team.uuid, subregion.team.uuid, this.game.uuid
+        );
+        
         // Assign battle challenge
-        const battleChallenge = chooseRandom(await this.entityManager.getRepository(BattleChallenge).findBy({
-            game: Equal(this.game.uuid)
-        }));
+        const battleChallengeUuid = chooseRandom(battleChallengeUuids);
+        const battleChallenge = await this.entityManager.getRepository(BattleChallenge).findOneBy({ uuid: battleChallengeUuid });
 
         // Create attack element
         const attack = new Attack()
