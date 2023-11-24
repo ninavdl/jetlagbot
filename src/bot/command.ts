@@ -62,7 +62,7 @@ export abstract class CommandScene<C extends JetlagContext = JetlagContext> exte
             }
             catch(e) {
                 console.log(e);
-                await ctx.editMessageReplyMarkup(null);
+                if(ctx.inlineMessageId != undefined) await ctx.editMessageReplyMarkup(null);
                 await ctx.reply("Error: " + e.message);
                 await ctx.scene.leave();
             }

@@ -32,3 +32,9 @@ export function chooseNRandom<T>(values: T[], n: number): T[] {
     }
     return result;
 }
+
+export function sortByPropertyAlphabetical<T>(input: T[], valueGetter: (value: T) => string): T[] {
+    return input.sort((value1, value2) => 
+        valueGetter(value1).localeCompare(valueGetter(value2))
+    );
+}

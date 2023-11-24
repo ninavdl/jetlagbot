@@ -1,4 +1,4 @@
-import { Markup } from "telegraf";
+import { Markup, Scenes } from "telegraf";
 import { ListTeamChallenges } from "../lifecycle/listTeamChallenges";
 import { CommandScene } from "./command";
 import { Challenge } from "../models/Challenge";
@@ -8,9 +8,22 @@ import { Subregion } from "../models/Subregion";
 import { Region } from "../models/Region";
 import { CompleteChallenge } from "../lifecycle/completeChallenge";
 import { GetChallenge } from "../lifecycle/getChallenge";
-import { v4 as uuid } from "uuid";
+import { sortByPropertyAlphabetical } from "../util";
 
-export class CompleteChallengeScene extends CommandScene {
+interface CompleteChallengeSession extends Scenes.SceneSession {
+    challengeUuid: string;
+    numberOfSubregions: number;
+    currentSelectedRegionUuid: string;
+    subregionUuids: string[]
+
+    subregionsByRegionUuids: { [regionUuid: string]: Subregion[] }
+}
+
+interface CompleteChallengeContext extends JetlagContext {
+    session: CompleteChallengeSession
+}
+
+export class CompleteChallengeScene extends CommandScene<CompleteChallengeContext> {
     public getInitCommand(): string {
         return "completeChallenge"
     }
@@ -20,51 +33,73 @@ export class CompleteChallengeScene extends CommandScene {
     }
 
     public async setup() {
-        this.enter(async (ctx) => {
-            try {
-                this.assertPrivateChat(ctx);
+        this.enter(this.handleErrors(async (ctx) => {
+            this.assertPrivateChat(ctx);
 
-                const teamChallenges: Challenge[] =
-                    await ctx.gameLifecycle.runAction(ListTeamChallenges, { user: ctx.user });
+            ctx.session.numberOfSubregions = null;
+            ctx.session.subregionUuids = [];
 
-                const cancelId = uuid();
+            const teamChallenges: Challenge[] =
+                await ctx.gameLifecycle.runAction(ListTeamChallenges, { user: ctx.user });
 
-                this.action(cancelId, async (ctx) => {
-                    await ctx.editMessageReplyMarkup(null);
-                    await ctx.scene.leave();
-                })
 
-                await ctx.reply("Which challenge did you complete?", Markup.inlineKeyboard(
-                    [...teamChallenges.map(challenge => {
-                        const id = uuid();
-                        this.action(id, (ctx) => this.offerRegions(ctx, challenge.uuid, []))
-                        return Markup.button.callback(challenge.name, id)
-                    }),
-                    Markup.button.callback("Cancel", cancelId)],
-                    { columns: 1 }
-                ));
-            }
-            catch (e) {
-                console.log(e);
-                await ctx.reply("Error: " + e);
-                await ctx.scene.leave();
-            }
-        })
+            await ctx.reply("Which challenge did you complete?", Markup.inlineKeyboard(
+                [
+                    ... sortByPropertyAlphabetical(teamChallenges, challenge => challenge.name).map(challenge => Markup.button.callback(challenge.name, `challenge-${challenge.uuid}`)),
+                    Markup.button.callback("Cancel", "cancel")
+                ],
+                { columns: 1 }
+            ));
+        }));
+
+        this.action("cancel", this.handleErrors(async (ctx) => {
+            await ctx.editMessageReplyMarkup(null);
+            await ctx.scene.leave();
+        }));
+
+        this.action(/^challenge-(.*)$/, this.handleErrors(async (ctx) => {
+            ctx.session.challengeUuid = ctx.match[1];
+
+            await ctx.editMessageReplyMarkup(null);
+            await this.offerRegions(ctx);
+        }));
+
+        this.action(/^region-(.*)$/, this.handleErrors(async (ctx) => {
+            ctx.session.currentSelectedRegionUuid = ctx.match[1];
+
+            await ctx.editMessageReplyMarkup(null);
+            await this.offerSubregions(ctx);
+        }));
+
+        this.action(/^subregion-(.*)$/, this.handleErrors(async (ctx) => {
+            ctx.session.subregionUuids.push(ctx.match[1]);
+            await ctx.editMessageReplyMarkup(null);
+
+            await this.complete(ctx);
+        }));
+
+        this.action("forceComplete", this.handleErrors(async (ctx) => {
+            await ctx.editMessageReplyMarkup(null);
+            await ctx.reply(`Do you really only want to claim ${ctx.session.subregionUuids.length} subregions?`,
+                Markup.inlineKeyboard([
+                    Markup.button.callback("Yes", "forceCompleteConfirm"),
+                    Markup.button.callback("Cancel", "cancel")
+                ])
+            );
+        }));
+
+        this.action("forceCompleteConfirm", this.handleErrors(async (ctx) => {
+            await ctx.editMessageReplyMarkup(null);
+            await this.complete(ctx, true);
+        }));
+
     }
 
-    public async offerRegions(ctx: JetlagContext, challengeUuid: string, alreadySelectedSubregions: string[]) {
-        await ctx.editMessageReplyMarkup(null);
+    public async offerRegions(ctx: CompleteChallengeContext) {
         const unclaimedSubregions: Subregion[] = await ctx.gameLifecycle.runAction(ListUnclaimedRegions, null);
 
         const regions: { [uuid: string]: Region } = {}
         const subregionsByRegion: { [uuid: string]: Subregion[] } = {}
-
-        const cancelId = uuid();
-
-        this.action(cancelId, async (ctx) => {
-            await ctx.editMessageReplyMarkup(null);
-            await ctx.scene.leave();
-        })
 
         unclaimedSubregions.forEach(subregion => {
             if (subregion.region.uuid in subregionsByRegion) subregionsByRegion[subregion.region.uuid].push(subregion);
@@ -73,66 +108,62 @@ export class CompleteChallengeScene extends CommandScene {
             regions[subregion.region.uuid] = subregion.region;
         });
 
+        ctx.session.subregionsByRegionUuids = subregionsByRegion;
 
-        await ctx.reply("In which region is the subregion you want to claim?", Markup.inlineKeyboard(
-            [...Object.values(regions).map(region => {
-                const id = uuid();
-                this.action(id, async (ctx) => this.offerSubregions(ctx, subregionsByRegion[region.uuid], challengeUuid, alreadySelectedSubregions));
-                return Markup.button.callback(region.name, id)
-            }), Markup.button.callback("Cancel", cancelId)],
-            { columns: 1 }
-        ));
+        const regionButtons = sortByPropertyAlphabetical(Object.values(regions), region => region.name)
+            .map(region => Markup.button.callback(region.name, `region-${region.uuid}`));
+
+        if (ctx.session.subregionUuids.length < ctx.session.numberOfSubregions && ctx.session.subregionUuids.length != 0) {
+            await ctx.reply("The selected challenge claims more than one subregion.\nIn which region is the next subregion you want to claim?",
+                Markup.inlineKeyboard(
+                    [
+                        ...regionButtons,
+                        Markup.button.callback(`Only claim ${ctx.session.subregionUuids.length} subregions`, "forceComplete"),
+                        Markup.button.callback("Cancel", "cancel")
+                    ],
+                    { columns: 1 }));
+        } else {
+            await ctx.reply("In which region is the subregion you want to claim?", Markup.inlineKeyboard(
+                [
+                    ...regionButtons,
+                    Markup.button.callback("Cancel", "cancel")
+                ],
+                { columns: 1 }
+            ));
+        }
     }
 
-    public async offerSubregions(ctx: JetlagContext, subregions: Subregion[], challengeUuid: string, alreadySelectedSubregions: string[]) {
-        await ctx.editMessageReplyMarkup(null);
+    public async offerSubregions(ctx: CompleteChallengeContext) {
+        if (ctx.session.numberOfSubregions == null) {
+            const challenge: Challenge = await ctx.gameLifecycle.runAction(GetChallenge, { uuid: ctx.session.challengeUuid });
+            ctx.session.numberOfSubregions = challenge.awardsSubregions;
+        }
 
-        let challenge: Challenge = await ctx.gameLifecycle.runAction(GetChallenge, { uuid: challengeUuid });
-
-        const cancelId = uuid();
-
-        this.action(cancelId, async (ctx) => {
-            await ctx.editMessageReplyMarkup(null);
-            await ctx.scene.leave();
-        })
-
-        let callback = async (ctx, subregionUuid) => {
-            if (challenge.awardsSubregions == alreadySelectedSubregions.length + 1) {
-                return this.complete(ctx, challenge.uuid, [...alreadySelectedSubregions, subregionUuid])
-            }
-            else {
-                return this.offerRegions(ctx, challenge.uuid, [...alreadySelectedSubregions, subregionUuid])
-            }
-        };
+        const subregions = ctx.session.subregionsByRegionUuids[ctx.session.currentSelectedRegionUuid];
 
         await ctx.reply("Which subregion do you want to claim?", Markup.inlineKeyboard(
-            [...subregions.filter(subregion => !alreadySelectedSubregions.includes(subregion.uuid)).map(subregion => {
-                const id = uuid();
-                this.action(id, async (ctx) => callback(ctx, subregion.uuid));
-                return Markup.button.callback(subregion.name, id)
-            }),
-            Markup.button.callback("Cancel", cancelId)
+            [
+                ...sortByPropertyAlphabetical(subregions.filter(subregion => !ctx.session.subregionUuids.includes(subregion.uuid)), subregion => subregion.name)
+                    .map(subregion => Markup.button.callback(subregion.name, `subregion-${subregion.uuid}`)),
+                Markup.button.callback("Cancel", "cancel")
             ],
-        { columns: 1 }
+            { columns: 1 }
         ))
     }
 
-    public async complete(ctx: JetlagContext, challengeUuid: string, subregionUuids: string[]) {
-        await ctx.editMessageReplyMarkup(null);
-        try {
+    public async complete(ctx: CompleteChallengeContext, force: boolean = false) {
+        if (ctx.session.subregionUuids.length == ctx.session.numberOfSubregions || force) {
             await ctx.gameLifecycle.runAction(CompleteChallenge, {
                 user: ctx.user,
-                challengeUuid: challengeUuid,
-                subregionUuids: subregionUuids
+                challengeUuid: ctx.session.challengeUuid,
+                subregionUuids: ctx.session.subregionUuids
             });
+
             await ctx.reply("Challenge marked as completed!");
-        }
-        catch (e) {
-            console.log(e);
-            await ctx.reply("Error: " + e.message);
-        }
-        finally {
             await ctx.scene.leave();
+        } else {
+            await this.offerRegions(ctx);
         }
+
     }
 }

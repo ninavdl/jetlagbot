@@ -43,7 +43,7 @@ export class CompleteChallenge extends GameLifecycleAction<void, CompleteChallen
             throw new GameError("Unknown subregions");
         }
 
-        if (subregions.length != challenge.awardsSubregions) {
+        if (subregions.length > challenge.awardsSubregions) {
             throw new GameError("Invalid number of subregions, expected " + challenge.awardsSubregions);
         }
 

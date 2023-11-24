@@ -19,7 +19,7 @@ export class GetChallengesScene extends CommandScene {
                 const challenges: Challenge[] = await ctx.gameLifecycle.runAction(ListTeamChallenges, { user: ctx.user });
 
                 await ctx.reply("Your current challenges are:\n\n"
-                    + challenges.map(challenge => challenge.toMarkdown()).join("\n\n"), { parse_mode: "MarkdownV2" });
+                    + challenges.map(challenge => challenge.toMarkdown()).join("\n\n"), { parse_mode: "MarkdownV2", disable_web_page_preview: true });
 
             }
             catch(e) {

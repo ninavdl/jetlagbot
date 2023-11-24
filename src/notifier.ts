@@ -26,7 +26,7 @@ export class Notifier {
     async notifyPlayers(players: Player[], message: string) {
         if(this.telegraf == null) return;
         players.forEach(async (player) => {
-            await this.telegraf.telegram.sendMessage(player.telegramChatId, message, {parse_mode: "MarkdownV2"})
+            await this.telegraf.telegram.sendMessage(player.telegramChatId, message, {parse_mode: "MarkdownV2", disable_web_page_preview: true})
         });
     }
 
@@ -50,6 +50,6 @@ export class Notifier {
     }
 
     async notifyGroup(message: string) {
-        await this.telegraf.telegram.sendMessage(this.game.mainTelegramChatId, message, {parse_mode: "MarkdownV2"});
+        await this.telegraf.telegram.sendMessage(this.game.mainTelegramChatId, message, {parse_mode: "MarkdownV2", disable_web_page_preview: true});
     }
 }
