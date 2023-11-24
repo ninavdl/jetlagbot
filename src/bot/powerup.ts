@@ -1,7 +1,7 @@
 import { Markup } from "telegraf";
 import { SupplyPlayer } from "../lifecycle/supplyPlayer";
 import { Player } from "../models/Player";
-import { escapeMarkdown } from "../util";
+import { escapeMarkdown, sortByPropertyAlphabetical } from "../util";
 import { CommandScene } from "./command";
 import { v4 as uuid } from "uuid";
 import { JetlagContext } from "../context";
@@ -199,7 +199,7 @@ export class PowerupScene extends CommandScene {
 
             await ctx.reply("In which region is the subregion you want to claim?",
                 Markup.inlineKeyboard([
-                    ...Object.values(regions).map(region => {
+                    ...sortByPropertyAlphabetical(Object.values(regions), region => region.name).map(region => {
                         const id = uuid();
                         this.action(id, async (ctx) => await this.powerupDirectClaimSelectSubregion(ctx, subregionsByRegion[region.uuid]));
                         return Markup.button.callback(region.name, id);
@@ -222,7 +222,7 @@ export class PowerupScene extends CommandScene {
             this.action(cancelId, async (ctx) => await ctx.scene.leave());
 
             await ctx.reply("Which subregion do you want to claim?", Markup.inlineKeyboard([
-                ...subregions.map(subregion => {
+                ...sortByPropertyAlphabetical(subregions, subregion => subregion.name).map(subregion => {
                     const id = uuid();
                     this.action(id, async (ctx) => this.powerupDirectClaimSubregion(ctx, subregion.uuid));
                     return Markup.button.callback(subregion.name, id);

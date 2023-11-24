@@ -6,6 +6,7 @@ import { CommandScene } from "./command";
 import { v4 as uuid } from "uuid";
 import { AssignBattleChallenge } from "../lifecycle/assignBattleChallenge";
 import { Attack } from "../models/Attack";
+import { sortByPropertyAlphabetical } from "../util";
 
 export class StartAttackScene extends CommandScene {
     getInitCommand(): string {
@@ -35,7 +36,7 @@ export class StartAttackScene extends CommandScene {
                 })
 
                 await ctx.reply("Which subregion do you want to attack?", Markup.inlineKeyboard(
-                    [...attackableSubregions.map(subregion => {
+                    [...sortByPropertyAlphabetical(attackableSubregions, subregion => subregion.name).map(subregion => {
                         const id = uuid();
                         this.action(id, async (ctx) => this.prepareBattleChallenge(ctx, subregion.uuid));
                         return Markup.button.callback(subregion.name + ` (${subregion.team.name})`, id);
