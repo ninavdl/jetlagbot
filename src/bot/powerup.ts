@@ -11,11 +11,6 @@ import { LocationOff } from "../lifecycle/locationOff";
 import { UnassignLocationPowerup } from "../lifecycle/unassignLocationPowerup";
 import { RedrawChallenges } from "../lifecycle/redrawChallenges";
 import { Challenge } from "../models/Challenge";
-import { Team } from "../models/Team";
-import { ListTeams } from "../lifecycle/listTeams";
-import { CardSwapListChallenges } from "../lifecycle/cardSwapListChallenges";
-import { ListTeamChallenges } from "../lifecycle/listTeamChallenges";
-import { CardSwap } from "../lifecycle/cardSwap";
 import { ListUnclaimedRegions } from "../lifecycle/listUnclaimedSubregions";
 import { Subregion } from "../models/Subregion";
 import { Region } from "../models/Region";
@@ -45,13 +40,13 @@ export class PowerupScene extends CommandScene {
         "Curse": {
             name: "Curse",
             description: "Curse another team",
-            stars: 1,
+            stars: 2,
             method: this.powerupCurse
         },
         "LocationOff": {
             name: "Location off",
             description: "Turn off your location for 1 hour",
-            stars: 1,
+            stars: 2,
             method: this.powerupLocationOff
         },
         "CardSwap": {
@@ -63,13 +58,13 @@ export class PowerupScene extends CommandScene {
         "RedrawCards": {
             name: "Redraw cards",
             description: "Get a new random set of challenges",
-            stars: 2,
+            stars: 3,
             method: this.powerupRedrawCards
         },
         "DirectClaim": {
             name: "Direct claim",
             description: "Claim your current subregion without completing a challenge",
-            stars: 5,
+            stars: 7,
             method: this.powerupDirectClaim
         }
     };
@@ -87,23 +82,36 @@ export class PowerupScene extends CommandScene {
                     await ctx.scene.leave();
                 });
 
-                await ctx.replyWithMarkdownV2(`The following powerups exist:\n\n`
-                    + Object.values(this.powerups).map(powerup => `*${escapeMarkdown(powerup.name)}* \\(${powerup.stars} ⭐\\)\n${escapeMarkdown(powerup.description)}`).join("\n\n")
-                    + `\n\nYou currently have ${player.team.stars} stars\\. Which powerup do you want to buy?`,
-                    Markup.inlineKeyboard(
-                        [
-                            ...Object.entries(this.powerups).filter(([_, powerup]) => powerup.stars <= player.team.stars).map(([powerupType, powerup]: [PowerupType, Powerup]) => {
-                                const id = uuid();
+                const powerupText = `The following powerups exist:\n\n`
+                    + Object.values(this.powerups).map(powerup => `*${escapeMarkdown(powerup.name)}* \\(${powerup.stars} ⭐\\)\n${escapeMarkdown(powerup.description)}`).join("\n\n");
 
-                                this.action(id, async (ctx) => {
-                                    await this.selectPowerup(ctx, powerupType)
-                                })
+                const availablePowerups = Object.entries(this.powerups).filter(([_, powerup]) => powerup.stars <= player.team.stars);
 
-                                return Markup.button.callback(powerup.name, id);
-                            }),
-                            Markup.button.callback("Cancel", abortId)
-                        ], { columns: 1 })
-                )
+                if (availablePowerups.length != 0) {
+                    await ctx.replyWithMarkdownV2(
+                        powerupText
+                        + `\n\nYou currently have ${player.team.stars} stars\\. Which powerup do you want to buy?`,
+                        Markup.inlineKeyboard(
+                            [
+                                ...availablePowerups.map(([powerupType, powerup]: [PowerupType, Powerup]) => {
+                                    const id = uuid();
+
+                                    this.action(id, async (ctx) => {
+                                        await this.selectPowerup(ctx, powerupType)
+                                    })
+
+                                    return Markup.button.callback(powerup.name, id);
+                                }),
+                                Markup.button.callback("Cancel", abortId)
+                            ], { columns: 1 })
+                    )
+                }
+                else {
+                    await ctx.replyWithMarkdownV2(
+                        powerupText + `\n\nYou currently have ${player.team.stars} stars and can't affor any powerup 😔`
+                    );
+                    await ctx.scene.leave();
+                }
             }
             catch (e) {
                 console.log(e);
@@ -227,7 +235,7 @@ export class PowerupScene extends CommandScene {
                     this.action(id, async (ctx) => this.powerupDirectClaimSubregion(ctx, subregion.uuid));
                     return Markup.button.callback(subregion.name, id);
                 })
-            ], {columns: 1}))
+            ], { columns: 1 }))
         }
         catch (e) {
             console.log(e);

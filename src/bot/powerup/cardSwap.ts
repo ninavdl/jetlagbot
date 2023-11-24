@@ -28,7 +28,7 @@ interface CardSwapContext extends JetlagContext {
 const numberOfChallengesToPick = 3;
 
 export class CardSwapScene extends CommandScene<CardSwapContext> {
-    static starsToDeduct = 2;
+    static starsToDeduct = 3;
 
     setup() {
         this.enter(this.handleErrors(async (ctx) => {
