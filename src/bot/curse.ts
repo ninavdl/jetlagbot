@@ -9,6 +9,7 @@ import { ListTeams } from "../lifecycle/listTeams";
 import { Team } from "../models/Team";
 import { ThrowCurse } from "../lifecycle/throwCurse";
 import { CurseAssignment } from "../models/CurseAssignment";
+import { escapeMarkdown } from "../util";
 
 export class CurseScene extends CommandScene {
     getInitCommand(): string {
@@ -98,7 +99,7 @@ export class CurseScene extends CommandScene {
 
             const assignment: CurseAssignment = await ctx.gameLifecycle.runAction(ThrowCurse, { user: ctx.user, teamUuid: teamUuid, curseUuid: curseUuid });
 
-            await ctx.reply(`You have cursed team '${assignment.cursedTeam.name}' with curse '${assignment.curse.name}'`, { parse_mode: "MarkdownV2" });
+            await ctx.reply(`You have cursed team *${escapeMarkdown(assignment.cursedTeam.name)}* with curse *${escapeMarkdown(assignment.curse.name)}*`, { parse_mode: "MarkdownV2" });
         }
         catch (e) {
             console.log(e);
