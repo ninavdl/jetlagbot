@@ -16,7 +16,7 @@ export class ImportBattleChallenges extends GameLifecycleAction<number, ImportBa
                 const battleChallenge = new BattleChallenge();
                 battleChallenge.game = this.game;
                 battleChallenge.name = input.name;
-                battleChallenge.description = input.description;
+                battleChallenge.description = input.description.trim();
                 battleChallenge.timeInMinutes = input.timeLimitInMinutes;
 
                 return battleChallenge;

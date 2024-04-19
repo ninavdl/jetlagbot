@@ -32,20 +32,28 @@ After completion of the battle challenge, the subregion is locked, and no furthe
 
 With the stars gained by completing challenges, a team can buy the following powerups:
 
-#### Curse (1 star)
+#### Curse (2 stars)
 
 A random curse is selected. This curse can then be used once to curse another team.
 A curse could be something like "You are not allowed to talk to your teammates for 30min".
 
-#### Card swap (2 stars)
+#### Curse Immunity (2 stars)
+
+Your team can't be cursed for 30min.
+
+#### Location off (2 stars)
+
+Your team is allowed to disable their trackers for 1 hour.
+
+#### Card swap (3 stars)
 
 You can select another team, and steal three of their challenges. In return, you have to select three of your challenges to give to the other team.
 
-#### Reshuffle (2 stars)
+#### Reshuffle (3 stars)
 
 All challenges on your hand are returned to the deck and five new random challenges are assigned.
 
-#### Direct claim (5 stars)
+#### Direct claim (7 stars)
 
 You can claim the subregion you are currently in without completing a challenge.
 

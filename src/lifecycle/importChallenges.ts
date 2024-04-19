@@ -19,7 +19,7 @@ export class ImportChallenges extends GameLifecycleAction<number, ImportChalleng
                 challenge.game = this.game;
                 challenge.awardsSubregions = input.subregions;
                 challenge.name = input.name;
-                challenge.description = input.description;
+                challenge.description = input.description.trim();
                 challenge.stars = input.stars;
                 challenge.dynamicNumberOfStars = input.dynamicNumberOfStars;
                 return challenge

@@ -42,6 +42,34 @@ async function initMap(map, geoJson, claimedSubregions) {
     borders.forEach(function (border) {
         map.setLayoutProperty(border, 'visibility', 'none');
     });
+    const regions = {};
+    const regionColors = [   "#E6194B", // Red
+    "#3CB44B", // Green
+    "#FFE119", // Yellow
+    "#4363D8", // Blue
+    "#F58231", // Orange
+    "#00a0a0", // Teal
+    "#46F0F0", // Cyan
+    "#F032E6", // Magenta
+    "#BCF60C", // Lime
+    "#911EB4", // Purple
+    "#800000",  // Maroon
+    "#FABEBE", // Pink
+    "#003080", // Brown
+    "#CCB891", // Peach
+    ];
+
+    console.log(regions);
+
+    geoJson.features.forEach( subregion => {
+        const regionCode = subregion.properties.NUTS3_CODE;
+        if( !(regionCode in regions) ) {
+            regions[regionCode] = {
+                name: subregion.properties.NUTS3_NAME,
+                color: regionColors[Object.keys(regions).length]
+            }
+        }
+    } );
 
 
     map.addSource("subregions", {
@@ -80,13 +108,28 @@ async function initMap(map, geoJson, claimedSubregions) {
         "source": "subregions",
         "minzoom": 9,
         "layout": {
-            "text-field": ["get", "LAU_NAME"],
-            "text-size": 10
+            "text-field": ["concat", ["get", "LAU_NAME"], " (", ["get", "NUTS3_NAME"], ")"],
+            "text-size":  10
         },
         "paint": {
             "text-opacity": 0.8
         }
-    })
+    });
+
+
+
+    for(const [code, region] of Object.entries(regions)) {
+        map.addLayer({
+            "id": `region-${code}`,
+            "type": "fill",
+            "source": "subregions",
+            "paint": {
+                "fill-color": region.color,
+                "fill-opacity": 0.1
+            },
+            "filter": ["==", "NUTS3_CODE", code]
+        });
+    }
 
     claimedSubregions.teams.forEach((team, i) => {
         const color = colors[i];

@@ -16,7 +16,7 @@ export class ImportCurses extends GameLifecycleAction<number, ImportCursesArgs> 
                 const curse = new Curse();
                 curse.game = this.game;
                 curse.name = item.name;
-                curse.description = item.description;
+                curse.description = item.description.trim();
                 curse.timeoutInMinutes = item.timeLimitInMinutes;
                 return curse;
             })
