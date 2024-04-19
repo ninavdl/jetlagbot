@@ -50,6 +50,9 @@ export class Team extends GameObject {
     @JoinTable()
     completedBattleChallenges: Promise<BattleChallenge[]>
 
+    @Column({nullable: true})
+    curseImmunityUntil: Date;
+
     public static async replaceAllChallengesOnHand(entityManager: EntityManager, teamUuid: string, challengeUuids: string[]) {
         await entityManager.query('DELETE FROM team_challenges_on_hand_challenge WHERE "teamUuid" = $1', [teamUuid]);
         for (let challengeUuid of challengeUuids) {

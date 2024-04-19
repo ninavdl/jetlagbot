@@ -42,6 +42,10 @@ export class ThrowCurse extends GameLifecycleAction<CurseAssignment, ThrowCurseA
             throw new GameError("No such team");
         }
 
+        if ( cursedTeam.curseImmunityUntil != null && cursedTeam.curseImmunityUntil >= new Date() ) {
+            throw new GameError( "The team is currently immune to curses." )
+        }
+
         assignment.cursedDate = new Date();
         assignment.cursedTeam = cursedTeam;
 

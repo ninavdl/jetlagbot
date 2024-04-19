@@ -1,17 +1,24 @@
-import { Markup } from "telegraf";
+import { Markup, Scenes } from "telegraf";
 import { ListCursesOnHand } from "../lifecycle/listCursesOnHand";
 import { Curse } from "../models/Curse";
 import { CommandScene } from "./command";
-import { v4 as uuid } from "uuid";
 import { JetlagContext } from "../context";
-import { ListTeamChallenges } from "../lifecycle/listTeamChallenges";
 import { ListTeams } from "../lifecycle/listTeams";
 import { Team } from "../models/Team";
 import { ThrowCurse } from "../lifecycle/throwCurse";
 import { CurseAssignment } from "../models/CurseAssignment";
 import { escapeMarkdown } from "../util";
 
-export class CurseScene extends CommandScene {
+interface CurseSession extends Scenes.SceneSession {
+    curseUuid: string;
+    teamUuid: string;
+}
+
+interface CurseContext extends JetlagContext {
+    session: CurseSession;
+}
+
+export class CurseScene extends CommandScene<CurseContext> {
     getInitCommand(): string {
         return "curse"
     }
@@ -21,92 +28,59 @@ export class CurseScene extends CommandScene {
     }
 
     async setup() {
-        this.enter(async (ctx) => {
-            try {
-                this.assertPrivateChat(ctx);
+        this.enter(this.handleErrors(async (ctx) => {
+            this.assertPrivateChat(ctx);
 
-                const curses: Curse[] = await ctx.gameLifecycle.runAction(ListCursesOnHand, { user: ctx.user });
+            const curses: Curse[] = await ctx.gameLifecycle.runAction(ListCursesOnHand, { user: ctx.user });
 
-                if (curses.length == 0) {
-                    await ctx.reply("You currently don't have any curses on your hand. You can buy one using /powerup.");
-                    await ctx.scene.leave();
-                    return;
-                }
-
-                const cancelId = uuid();
-
-                this.action(cancelId, async (ctx) => {
-                    await ctx.editMessageReplyMarkup(null);
-                    await ctx.scene.leave()
-                });
-
-                await ctx.replyWithMarkdownV2("Which curse do you want to throw? The following curses are available:\n\n" +
-                    curses.map(curse => curse.toMarkdown()).join("\n"), Markup.inlineKeyboard(
-                        [...curses.map(curse => {
-                            const id = uuid();
-
-                            this.action(id, async (ctx) => {
-                                this.selectCurse(ctx, curse.uuid)
-                            });
-
-                            return Markup.button.callback(curse.name, id);
-                        }),
-                        Markup.button.callback("Cancel", cancelId)
-                        ], { columns: 1 }
-                    ));
-            }
-            catch (e) {
-                console.log(e);
-                await ctx.reply("Error: " + e.message);
+            if (curses.length == 0) {
+                await ctx.reply("You currently don't have any curses on your hand. You can buy one using /powerup.");
                 await ctx.scene.leave();
+                return;
             }
-        })
+
+            await ctx.replyWithMarkdownV2("Which curse do you want to throw? The following curses are available:\n\n" +
+                curses.map(curse => curse.toMarkdown()).join("\n"), Markup.inlineKeyboard(
+                    [...curses.map(curse => Markup.button.callback(curse.name, `curse-${curse.uuid}`)),
+                    Markup.button.callback("Cancel", "cancel")
+                    ], { columns: 1 }
+                ));
+        }));
+
+        this.action(/^curse-(.*)$/, this.handleErrors(async (ctx) => {
+            await ctx.editMessageReplyMarkup(null);
+            ctx.session.curseUuid = ctx.match[1];
+
+            await this.selectTeam(ctx);
+        }));
+
+        this.action(/^team-(.*)$/, this.handleErrors(async (ctx) => {
+            await ctx.editMessageReplyMarkup(null);
+            ctx.session.teamUuid = ctx.match[1];
+
+            await this.throwCurse(ctx);
+        }));
+
+        this.action("cancel", this.handleErrors(async (ctx) => {
+            await ctx.editMessageReplyMarkup(null);
+            await ctx.scene.leave();
+        }));
     }
 
-    async selectCurse(ctx: JetlagContext, curseUuid: string) {
-        try {
-            await ctx.editMessageReplyMarkup(null);
+    async selectTeam(ctx: JetlagContext) {
+        const teams: Team[] = await ctx.gameLifecycle.runAction(ListTeams, { withPlayers: true });
 
-            const teams: Team[] = await ctx.gameLifecycle.runAction(ListTeams, { withPlayers: true });
-
-            const cancelId = uuid();
-
-            this.action(cancelId, async (ctx) => {
-                await ctx.editMessageReplyMarkup(null);
-                await ctx.scene.leave()
-            });
-
-            await ctx.reply("Which team do you want to throw the curse on?", Markup.inlineKeyboard([
-                ...teams.filter(team => !team.players.map(player => player.telegramId).includes(ctx.user.telegramUserId)).map(team => {
-                    const id = uuid();
-                    this.action(id, async (ctx) => this.throwCurse(ctx, curseUuid, team.uuid));
-                    return Markup.button.callback(team.name, id);
-                }),
-                Markup.button.callback("Cancel", cancelId)
-            ], { columns: 1 })
-            );
-        }
-        catch (e) {
-            console.log(e);
-            await ctx.reply("Error: " + e.message);
-            await ctx.scene.leave();
-        }
+        await ctx.reply("Which team do you want to throw the curse on?", Markup.inlineKeyboard([
+            ...teams.filter(team => !team.players.map(player => player.telegramId).includes(ctx.user.telegramUserId))
+                .filter(team => team.curseImmunityUntil == null || team.curseImmunityUntil <= new Date()).map(team => Markup.button.callback(team.name, `team-${team.uuid}`)),
+            Markup.button.callback("Cancel", "cancel")
+        ], { columns: 1 })
+        );
     }
 
-    async throwCurse(ctx: JetlagContext, curseUuid: string, teamUuid: string) {
-        try {
-            await ctx.editMessageReplyMarkup(null);
+    async throwCurse(ctx: CurseContext) {
+        const assignment: CurseAssignment = await ctx.gameLifecycle.runAction(ThrowCurse, { user: ctx.user, teamUuid: ctx.session.teamUuid, curseUuid: ctx.session.curseUuid });
 
-            const assignment: CurseAssignment = await ctx.gameLifecycle.runAction(ThrowCurse, { user: ctx.user, teamUuid: teamUuid, curseUuid: curseUuid });
-
-            await ctx.reply(`You have cursed team *${escapeMarkdown(assignment.cursedTeam.name)}* with curse *${escapeMarkdown(assignment.curse.name)}*`, { parse_mode: "MarkdownV2" });
-        }
-        catch (e) {
-            console.log(e);
-            await ctx.reply("Error: " + e.message)
-        }
-        finally {
-            await ctx.scene.leave();
-        }
+        await ctx.reply(`You have cursed team *${escapeMarkdown(assignment.cursedTeam.name)}* with curse *${escapeMarkdown(assignment.curse.name)}*`, { parse_mode: "MarkdownV2" });
     }
 }

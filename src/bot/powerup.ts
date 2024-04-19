@@ -16,6 +16,8 @@ import { Subregion } from "../models/Subregion";
 import { Region } from "../models/Region";
 import { DirectClaim } from "../lifecycle/directClaim";
 import { CardSwapScene } from "./powerup/cardSwap";
+import { CurseImmunity } from "../lifecycle/curseImmunity";
+import { UnassignCurseImmunity } from "../lifecycle/unassignCurseImmunity";
 
 type Powerup = {
     name: string,
@@ -24,7 +26,9 @@ type Powerup = {
     method: (ctx: JetlagContext) => Promise<void>,
 }
 
-type PowerupType = "Curse" | "LocationOff" | "CardSwap" | "RedrawCards" | "DirectClaim"
+const CURSE_IMMUNITY_MINUTES = 30;
+
+type PowerupType = "Curse" | "LocationOff" | "CardSwap" | "RedrawCards" | "DirectClaim" | "CurseImmunity";
 
 
 export class PowerupScene extends CommandScene {
@@ -42,6 +46,12 @@ export class PowerupScene extends CommandScene {
             description: "Curse another team",
             stars: 2,
             method: this.powerupCurse
+        },
+        "CurseImmunity": {
+            name: "Curse immunity",
+            description: `Your team can't be cursed for ${CURSE_IMMUNITY_MINUTES}min`,
+            stars: 2,
+            method: this.powerupCurseImmunity
         },
         "LocationOff": {
             name: "Location off",
@@ -255,6 +265,24 @@ export class PowerupScene extends CommandScene {
         catch (e) {
             console.log(e);
             await ctx.reply("Error: " + e.message)
+        }
+        finally {
+            await ctx.scene.leave();
+        }
+    }
+
+    async powerupCurseImmunity(ctx: JetlagContext) {
+        try {
+            await ctx.gameLifecycle.runAction(CurseImmunity, { user: ctx.user, stars: this.powerups["CurseImmunity"].stars, minutes: CURSE_IMMUNITY_MINUTES });
+            await ctx.reply(`You are now immune to curses for ${CURSE_IMMUNITY_MINUTES}min`);
+
+            ctx.gameLifecycle.scheduler.schedule(async (gameLifecycle) => {
+                gameLifecycle.runAction(UnassignCurseImmunity, { user: ctx.user })
+            }, CURSE_IMMUNITY_MINUTES * 60);
+        }
+        catch (e) {
+            console.log(e);
+            await ctx.reply(e.message);
         }
         finally {
             await ctx.scene.leave();
