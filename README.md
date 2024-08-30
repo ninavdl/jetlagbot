@@ -10,6 +10,8 @@ The map is divided into regions and subregions. This could for example be distri
 Further required is a list of challenges, battle challenges, and curses.
 
 When the game is started, each team gets a list of 5 challenges on their hand. One challenge can be on the hand of multiple teams, but one team can only have each challenge once.
+Further, each team gets a list of 3 missions on their hand. One missino can be on the hand of multiple teams,
+but one team can only have each mission once.
 
 ### Challenges
 
@@ -27,6 +29,13 @@ When a team has claimed two subregions bordering another subregion, they can tra
 If the attacking team wins, they claim the subregion.
 
 After completion of the battle challenge, the subregion is locked, and no further battle challenge can be started for this subregion (irregardless of who won the battle challenge).
+
+### Missions
+
+Missions are longer lasting tasks to be done during the game that reward bonus points.
+They are usually related to specific properties of claimed subregions, i.e. "Claim 4 connecting subregions".
+There are easy, medium and hard challenges, which give a different number of points each.
+Each team always has one hard challenge and two easy or medium challenges on their hand.
 
 ### Powerups
 
@@ -49,9 +58,18 @@ Your team is allowed to disable their trackers for 1 hour.
 
 You can select another team, and steal three of their challenges. In return, you have to select three of your challenges to give to the other team.
 
+#### Mission peek (3 stars)
+
+You can select another team, and see which missions they currently have on their hand.
+It is not possible to steal their missions.
+
 #### Reshuffle (3 stars)
 
 All challenges on your hand are returned to the deck and five new random challenges are assigned.
+
+#### Redraw missions (4 stars)
+
+All missions on your hand are returned to the deck and three new random missions are assigned.
 
 #### Direct claim (7 stars)
 
@@ -145,6 +163,14 @@ A CSV with the following columns (in that order) is required:
 * Description
 * Time limit in minutes (optional)
 
+#### Missions
+
+A CSV with the following columns (in that order) is required:
+
+* Title
+* Description
+* Difficulty (`EASY`, `MEDIUM`, or `HARD`)
+
 #### GeoJSON
 
 A GeoJSON file is required to define the game regions and subregions, and to draw the map of claimed subregions.
@@ -165,6 +191,10 @@ To start the game, issue the `/start` command in the group.
 #### Claiming subregions
 
 * A player can use the `/completeChallenge` command to mark a subregion as claimed. They have to select the challenge that they completed. Other players will be notified that the subregion was claimed.
+
+#### Completing missions
+
+* A player can use the `/completeMission` command to mark a mission as finished. There is no validation that the mission is actually completed. Other players will be notified that the mission was completed, and a new mission is assigned to the team.
 
 #### Buying powerups
 

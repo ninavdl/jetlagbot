@@ -12,8 +12,11 @@ import { ImportCurses } from "../lifecycle/ImportCurses";
 import { GetGame } from "../lifecycle/getGame";
 import { ImportGeoJson } from "../lifecycle/importGeoJson";
 import { Game } from "../models/Game";
+import { ImportMissions } from "../lifecycle/importMissions";
+import { Mission, MissionDifficulty } from "../models/Misssion";
+import { GameError } from "../lifecycle/lifecycle";
 
-type ImportType = "Challenges" | "Curses" | "BattleChallenges" | "GeoJson"
+type ImportType = "Challenges" | "Curses" | "BattleChallenges" | "GeoJson" | "Missions"
 
 type Importer = {
     name: string,
@@ -51,6 +54,11 @@ export class ImportScene extends CommandScene<ImporterContext> {
             name: "GeoJson",
             method: this.importGeoJson,
             raw: true
+        },
+        "Missions": {
+            name: "Missions",
+            method: this.importMissions,
+            keys: ["title", "description", "difficulty"]
         }
     }
 
@@ -71,7 +79,7 @@ export class ImportScene extends CommandScene<ImporterContext> {
                     await ctx.scene.leave();
                     return;
                 }
-                
+
                 if (!(await ctx.telegram.getChatAdministrators(ctx.chat.id)).map(member => member.user.id).includes(ctx.user.telegramUserId)) {
                     await ctx.reply("User must be group admin");
                     await ctx.scene.leave();
@@ -99,7 +107,7 @@ export class ImportScene extends CommandScene<ImporterContext> {
                     { columns: 1 }
                 ))
             }
-            catch(e) {
+            catch (e) {
                 console.log(e);
                 await ctx.reply("Error: " + e.message);
                 await ctx.scene.leave();
@@ -119,7 +127,7 @@ export class ImportScene extends CommandScene<ImporterContext> {
             const importer = this.importers[ctx.session.importType]
 
             let data: any;
-            if(importer.raw == null || !importer.raw) {
+            if (importer.raw == null || !importer.raw) {
                 data = parse(await response.text(), {
                     delimiter: ";",
                     encoding: "utf-8",
@@ -220,15 +228,40 @@ export class ImportScene extends CommandScene<ImporterContext> {
 
     async importGeoJson(ctx: ImporterContext, data: Buffer) {
         try {
-            const importedSubregion: number = await ctx.gameLifecycle.runAction(ImportGeoJson, {geoJson: data.toString("utf8")});
+            const importedSubregion: number = await ctx.gameLifecycle.runAction(ImportGeoJson, { geoJson: data.toString("utf8") });
 
             await ctx.reply(`Imported ${importedSubregion} subregions from GeoJson`);
         }
-        catch(e) {
+        catch (e) {
             console.log(e);
             await ctx.reply("Error: " + e.message);
         }
         finally {
+            await ctx.scene.leave();
+        }
+    }
+
+    async importMissions(ctx: ImporterContext, data: { title: string, description: string, difficulty: string }[]) {
+        try {
+            const importedMissions = await ctx.gameLifecycle.runAction(ImportMissions, {
+                items: data.map(item => {
+                    if (!(<any>Object).values(MissionDifficulty).includes(item.difficulty)) {
+                        throw new GameError("Unknown dificulty: " + item.difficulty)
+                    }
+
+                    return {
+                        title: item.title,
+                        description: item.description,
+                        difficulty: item.difficulty as MissionDifficulty
+                    }
+                })
+            })
+
+            await ctx.reply(`Imported ${importedMissions} missions`);
+        } catch (e) {
+            console.log(e);
+            await ctx.reply("Error: " + e.message);
+        } finally {
             await ctx.scene.leave();
         }
     }

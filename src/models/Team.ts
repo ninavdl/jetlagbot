@@ -7,6 +7,7 @@ import { Challenge } from "./Challenge";
 import { Attack } from "./Attack";
 import { CurseAssignment } from "./CurseAssignment";
 import { BattleChallenge } from "./BattleChallenge";
+import { Mission } from "./Misssion";
 
 
 @Entity()
@@ -30,6 +31,14 @@ export class Team extends GameObject {
 
     @ManyToOne(() => CurseAssignment, curseAssignment => curseAssignment.ownerTeam)
     cursesOnHand: Relation<CurseAssignment>[];
+
+    @ManyToMany(() => Mission, (mission) => mission.teams)
+    @JoinTable()
+    missionsOnHand: Relation<Mission[]>;
+
+    @ManyToMany(() => Mission, (mission) => mission.completedByTeams)
+    @JoinTable()
+    completedMissions: Promise<Mission[]>;
 
     @ManyToOne(() => CurseAssignment, curseAssignment => curseAssignment.cursedTeam)
     cursed: Relation<CurseAssignment>[];
@@ -58,6 +67,14 @@ export class Team extends GameObject {
         for (let challengeUuid of challengeUuids) {
             await entityManager.query('INSERT INTO team_challenges_on_hand_challenge ("teamUuid", "challengeUuid") VALUES ($1, $2);',
             [teamUuid, challengeUuid]);
+        }
+    }
+
+    public static async replaceAllMissionssOnHand(entityManager: EntityManager, teamUuid: string, missionUuids: string[]) {
+        await entityManager.query('DELETE FROM team_missions_on_hand_mission WHERE "teamUuid" = $1', [teamUuid]);
+        for (let missionUuid of missionUuids) {
+            await entityManager.query('INSERT INTO team_missions_on_hand_mission ("teamUuid", "missionUuid") VALUES ($1, $2);',
+            [teamUuid, missionUuid]);
         }
     }
 

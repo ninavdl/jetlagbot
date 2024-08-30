@@ -14,6 +14,7 @@ import { Curse } from "./models/Curse";
 import { CurseAssignment } from "./models/CurseAssignment";
 import { Web } from "./web/index"
 import { Config } from "./config";
+import { Mission } from "./models/Misssion";
 
 const config: Config = {
     mapboxPulicKey: process.env.JETLAG_MAPBOX_PUBLIC_KEY,
@@ -36,7 +37,7 @@ const datasource = new DataSource({
     username: config.database.user,
     password: config.database.password,
 
-    entities: [Game, Team, Player, Region, Subregion, Challenge, BattleChallenge, Attack, Curse, CurseAssignment],
+    entities: [Game, Team, Player, Region, Subregion, Challenge, BattleChallenge, Attack, Curse, CurseAssignment, Mission],
     
     logging: true,
     synchronize: true

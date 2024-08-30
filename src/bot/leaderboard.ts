@@ -20,10 +20,10 @@ export class LeaderboardScene extends CommandScene {
 
                 const leaderboardFormatted = leaderboard.map((entry, i) =>
                     `${i < trophies.length ? trophies[i] : (i+1) + "\\."} *${escapeMarkdown(entry.name)}* \\(${entry.subregions}, ${entry.uniqueRegions}, ` + 
-                    `${escapeMarkdown(entry.area.toString())}\\): ${entry.points} points`
+                    `${escapeMarkdown(entry.area.toString())}, ${entry.missionPoints}\\): ${entry.points} points`
                     ).join("\n");
                 await ctx.reply(`The current leaderboard is:\n\n${leaderboardFormatted}\n\n` +
-                `_\\(Subregions, Regions, Area\\)_`, { parse_mode: "MarkdownV2" });
+                `_\\(Subregions, Regions, Area, Missions\\)_`, { parse_mode: "MarkdownV2" });
             }
             catch(e) {
                 console.log(e);

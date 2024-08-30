@@ -6,6 +6,7 @@ import { Player } from "./Player";
 import { Region } from "./Region";
 import { BattleChallenge } from "./BattleChallenge";
 import { Curse } from "./Curse";
+import { Mission } from "./Misssion";
 
 
 @Entity()
@@ -25,6 +26,12 @@ export class Game extends GameObject {
     @Column()
     numberOfChallengesPerTeam: number = 5;
 
+    @Column()
+    numberOfHardMissionsPerTeam: number = 1;
+
+    @Column()
+    numberOfNonHardMissionsPerTeam: number = 2;
+
     @OneToMany(() => Challenge, (challenge) => challenge.game)
     allChallenges: Relation<Challenge>[];
 
@@ -36,6 +43,9 @@ export class Game extends GameObject {
 
     @OneToMany(() => Curse, (curse) => curse.game)
     allCurses: Relation<Curse>[];
+
+    @OneToMany(() => Mission, (mission) => mission.game)
+    allMissions: Relation<Mission>[];
     
     @Column({
         nullable: true,

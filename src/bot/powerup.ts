@@ -18,6 +18,8 @@ import { DirectClaim } from "../lifecycle/directClaim";
 import { CardSwapScene } from "./powerup/cardSwap";
 import { CurseImmunity } from "../lifecycle/curseImmunity";
 import { UnassignCurseImmunity } from "../lifecycle/unassignCurseImmunity";
+import { MissionPeekScene } from "./powerup/missionPeek";
+import { RedrawMissions } from "../lifecycle/redrawMissions";
 
 type Powerup = {
     name: string,
@@ -28,7 +30,7 @@ type Powerup = {
 
 const CURSE_IMMUNITY_MINUTES = 30;
 
-type PowerupType = "Curse" | "LocationOff" | "CardSwap" | "RedrawCards" | "DirectClaim" | "CurseImmunity";
+type PowerupType = "Curse" | "LocationOff" | "CardSwap" | "RedrawCards" | "DirectClaim" | "CurseImmunity" | "MissionPeek" | "RedrawMissions";
 
 
 export class PowerupScene extends CommandScene {
@@ -65,11 +67,23 @@ export class PowerupScene extends CommandScene {
             stars: CardSwapScene.starsToDeduct,
             method: this.powerupCardSwap
         },
+        "MissionPeek": {
+            name: "Peek missions",
+            description: "See the missions another team has on their hand",
+            stars: MissionPeekScene.starsToDeduct,
+            method: this.powerupMissionPeek
+        },
         "RedrawCards": {
             name: "Redraw cards",
             description: "Get a new random set of challenges",
             stars: 3,
             method: this.powerupRedrawCards
+        },
+        "RedrawMissions": {
+            name: "Redraw missions",
+            description: "Get a new random set of missions",
+            stars: 4,
+            method: this.powerupRedrawMissions
         },
         "DirectClaim": {
             name: "Direct claim",
@@ -279,6 +293,23 @@ export class PowerupScene extends CommandScene {
             ctx.gameLifecycle.scheduler.schedule(async (gameLifecycle) => {
                 gameLifecycle.runAction(UnassignCurseImmunity, { user: ctx.user })
             }, CURSE_IMMUNITY_MINUTES * 60);
+        }
+        catch (e) {
+            console.log(e);
+            await ctx.reply(e.message);
+        }
+        finally {
+            await ctx.scene.leave();
+        }
+    }
+
+    async powerupMissionPeek(ctx: JetlagContext) {
+        await ctx.scene.enter(MissionPeekScene.name)
+    }
+
+    async powerupRedrawMissions(ctx: JetlagContext) {
+        try {
+            await ctx.gameLifecycle.runAction(RedrawMissions, {user: ctx.user, starsToDeduct: this.powerups["RedrawMissions"].stars})
         }
         catch (e) {
             console.log(e);

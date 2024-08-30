@@ -1,7 +1,8 @@
 import { GameError, GameLifecycleAction } from "./lifecycle";
 import { Player } from "../models/Player";
-import { IsNull, Equal } from "typeorm";
+import { IsNull, Equal, Not } from "typeorm";
 import { Challenge } from "../models/Challenge";
+import { Mission, MissionDifficulty } from "../models/Misssion";
 
 export class CheckGamePreconditions extends GameLifecycleAction<void, void> {
     public async run() {
@@ -38,6 +39,20 @@ export class CheckGamePreconditions extends GameLifecycleAction<void, void> {
 
         if(challenges.length < this.game.numberOfChallengesPerTeam) {
             throw new GameError("There are not enough challenges (min " + this.game.numberOfChallengesPerTeam + " are required");
+        }
+
+        let hardMissions: Mission[] = await this.entityManager.getRepository(Mission).findBy({
+            game: Equal(this.game.uuid),
+            difficulty: Equal(MissionDifficulty.HARD)
+        });
+
+        let otherMissions: Mission[] = await this.entityManager.getRepository(Mission).findBy({
+            game: Equal(this.game.uuid),
+            difficulty: Not(Equal(MissionDifficulty.HARD))
+        });
+
+        if (hardMissions.length < this.game.numberOfHardMissionsPerTeam || otherMissions.length < this.game.numberOfNonHardMissionsPerTeam) {
+            throw new GameError("There are not enough missions");
         }
     }
 }

@@ -22,6 +22,8 @@ import { ClaimedSubregionsScene } from './bot/claimedSubregions';
 import { CardSwapScene } from './bot/powerup/cardSwap';
 import { MapScene } from './bot/map';
 import { Config } from './config';
+import { CompleteMissionScene } from './bot/completeMission';
+import { MissionPeekScene } from './bot/powerup/missionPeek';
 
 type SceneConstructor = { new(telegraf: Telegraf<JetlagContext>): CommandScene }
 
@@ -53,7 +55,9 @@ export class Bot {
             ImportScene,
             ClaimedSubregionsScene,
             CardSwapScene,
-            MapScene
+            MapScene,
+            CompleteMissionScene,
+            MissionPeekScene
         ]
 
         const scenes = sceneTypes.map(sceneType => new sceneType(this.telegraf));
