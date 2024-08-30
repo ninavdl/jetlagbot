@@ -1,7 +1,7 @@
 import { JetlagContext } from "../context";
 import { Context, Scenes, Telegraf } from "telegraf";
 import { GameError } from "../lifecycle/lifecycle";
-import { GetGame } from "../lifecycle/getGame";
+import { GetGame } from "../lifecycle/helper/getGame";
 import { Game } from "../models/Game";
 
 export abstract class CommandScene<C extends JetlagContext = JetlagContext> extends Scenes.BaseScene<C> {

@@ -1,9 +1,9 @@
 import { Markup, Scenes } from "telegraf";
 import { CommandScene } from "../command";
-import { ListTeams } from "../../lifecycle/listTeams";
+import { ListTeams } from "../../lifecycle/helper/listTeams";
 import { Team } from "../../models/Team";
-import { CardSwapListChallengeReturnType, CardSwapListChallenges } from "../../lifecycle/cardSwapListChallenges";
-import { CardSwap } from "../../lifecycle/cardSwap";
+import { CardSwapListChallengeReturnType, CardSwapListChallenges } from "../../lifecycle/powerup/cardSwapListChallenges";
+import { CardSwap } from "../../lifecycle/powerup/cardSwap";
 import { JetlagContext } from "../../context";
 import { Challenge } from "../../models/Challenge";
 

@@ -3,11 +3,11 @@ import * as Router from "koa-router";
 import * as serve from "koa-static";
 import { GameLifecycle } from "../lifecycle/lifecycle";
 import { WebContext } from "./context";
-import { GetGame } from "../lifecycle/getGame";
+import { GetGame } from "../lifecycle/helper/getGame";
 import { DataSource } from "typeorm";
 import { Team } from "../models/Team";
 import { Subregion } from "../models/Subregion";
-import { ListClaimedSubregions } from "../lifecycle/listClaimedSubregions";
+import { ListClaimedSubregions } from "../lifecycle/helper/listClaimedSubregions";
 import { Config } from "../config";
 import { Game } from "../models/Game";
 

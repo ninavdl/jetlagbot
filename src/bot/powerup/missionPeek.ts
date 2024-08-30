@@ -1,10 +1,10 @@
 import { Markup } from "telegraf"
 import { JetlagContext } from "../../context"
-import { ListTeams } from "../../lifecycle/listTeams"
+import { ListTeams } from "../../lifecycle/helper/listTeams"
 import { Team } from "../../models/Team"
 import { CommandScene } from "../command"
 import { Mission } from "../../models/Misssion"
-import { ListTeamMissions } from "../../lifecycle/listTeamMissions"
+import { ListTeamMissions } from "../../lifecycle/challenge/listTeamMissions"
 
 export class MissionPeekScene extends CommandScene<JetlagContext> {
     static starsToDeduct = 3;
