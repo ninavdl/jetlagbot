@@ -1,0 +1,72 @@
+version: '3.9'
+
+services:
+  postgres:
+    image: docker.io/library/postgres:18-alpine
+    expose:
+      - 5432
+    volumes:
+      - pg-data:/var/lib/postgres/data
+    environment:
+      - POSTGRES_PASSWORD=${JETLAG_PG_PASSWORD}
+      - POSTGRES_USER=jetlag
+      - POSTGRES_DB=jetlag
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U jetlag"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    restart: always
+    networks:
+      traefik_network:
+        aliases:
+          - postgres
+
+  euregiojetlag:
+    image: ghcr.io/ninavdl/jetlagbot:main
+    environment:
+      - JETLAG_PG_HOST=postgres
+      - JETLAG_PG_PORT=5432
+      - JETLAG_PG_USER=jetlag
+    env_file:
+      - .env
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: always
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.your_service.rule=Host(`jetlag.ninavdl.de`)"  # Replace with your domain
+      - "traefik.http.routers.your_service.entrypoints=websecure"
+      - "traefik.http.routers.your_service.tls.certresolver=myresolver"
+      - "traefik.http.services.your_service.loadbalancer.server.port=8080"
+    networks:
+      - traefik_network
+  
+  traefik:
+    image: docker.io/library/traefik:v3.7.7
+    command:
+      - "--providers.docker=true"  # Use Docker as the provider
+      - "--entrypoints.web.address=:80"  # HTTP entrypoint
+      - "--entrypoints.websecure.address=:443"  # HTTPS entrypoint
+      - "--certificatesresolvers.myresolver.acme.tlschallenge=true"  # Enable ACME (Let's Encrypt) for TLS certificates
+      - "--certificatesresolvers.myresolver.acme.email=letsencrypt@ninavdl.de"  # Email address for Let's Encrypt notifications
+      - "--certificatesresolvers.myresolver.acme.storage=/letsencrypt/acme.json"  # ACME storage file
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - /run/user/0/podman/podman.sock:/var/run/docker.sock:ro
+      - "letsencrypt:/letsencrypt"  # Mount directory for Let's Encrypt certificates
+    networks:
+      - traefik_network
+    dns:
+      - 1.1.1.1
+    restart: always
+volumes:
+  pg-data:
+  letsencrypt:
+
+networks:
+  traefik_network:
+    driver: bridge

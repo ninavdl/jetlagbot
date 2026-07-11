@@ -1,4 +1,4 @@
-FROM node:21-alpine as builder
+FROM node:26-alpine as builder
 
 WORKDIR /usr/src/app
 
@@ -12,7 +12,7 @@ COPY tsconfig.json ./
 RUN ls; cat tsconfig.json
 RUN npm run build
 
-FROM node:21-alpine
+FROM node:26-alpine
 
 ENV NODE_ENV production
 
