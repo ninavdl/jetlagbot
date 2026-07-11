@@ -128,18 +128,23 @@ export class ImportScene extends CommandScene<ImporterContext> {
 
             let data: any;
             if (importer.raw == null || !importer.raw) {
-                data = parse(await response.text(), {
-                    delimiter: ";",
-                    encoding: "utf-8",
-                    columns: importer.keys,
-                    fromLine: 2 // skip header line
-                });
+                try {
+                    data = parse(await response.text(), {
+                        delimiter: ";",
+                        encoding: "utf-8",
+                        columns: importer.keys,
+                        fromLine: 2 // skip header line
+                    });
+                } catch (e) {
+                    console.log(e);
+                    ctx.reply("Error importing file: " + e.message);
+                    ctx.scene.leave();
+                }
             }
             else {
                 data = Buffer.from(await response.arrayBuffer());
             }
             await this.importers[ctx.session.importType].method.call(this, ctx, data);
-
         })
     }
 
