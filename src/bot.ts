@@ -24,6 +24,7 @@ import { MapScene } from './bot/status/map';
 import { Config } from './config';
 import { CompleteMissionScene } from './bot/challenge/completeMission';
 import { MissionPeekScene } from './bot/powerup/missionPeek';
+import { ListPlayersScene } from './bot/init/listPlayers';
 
 type SceneConstructor = { new(telegraf: Telegraf<JetlagContext>): CommandScene }
 
@@ -41,6 +42,7 @@ export class Bot {
             CreateGameScene,
             CreateTeamScene,
             JoinTeamScene,
+            ListPlayersScene,
             StartGameScene,
             HelloScene,
             CompleteChallengeScene,

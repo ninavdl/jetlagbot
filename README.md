@@ -133,6 +133,7 @@ The bot has to be added to a telegram group. To configure it, use the following 
 * `/createTeam`: Creates a team
 * `/hello`: Each player **must** run this command in a private chat with the bot, so that the bot knows how to contact the player privately.
 * `/joinTeam`: Each player must join one team.
+* `/listPlayers`: List which players have registered, and if they are assigned to a team and have executed the `/hello` command.
 
 Use `/import`, to import game data.
 When a CSV is required, the columns have to be separated by semicolon. The first line of the CSV may contain a headline and is skipped.
